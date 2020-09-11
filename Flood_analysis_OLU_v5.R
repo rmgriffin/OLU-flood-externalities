@@ -54,6 +54,8 @@ decompress_file <- function(file, directory, .file_cache = FALSE) {
 # https://community.rstudio.com/t/how-to-download-a-google-drives-contents-based-on-drive-id-or-url/16896/6
 
 setwd("~/Github/OLU-flood-externalities")
+dir.create(file.path('Tempdata'), recursive = TRUE)
+setwd("./Tempdata")
 folder_url<-"https://drive.google.com/open?id=1eLBOiF54WY8VClVgmWgzDE4IKyfCGuDW"
 files <- drive_get(as_id(folder_url))
 system.time(walk(files$id, ~ drive_download(as_id(.x))))
@@ -117,6 +119,10 @@ Exposure<-subset(Exposure, select = -c(Join_Count, TARGET_FID, Join_Cou_1, TARGE
 rm(CA, RC)
 # Merge id (for water depth extraction)
 Exposure$merge_id<-seq(1:nrow(Exposure))
+# Deleting data
+setwd("..")
+unlink("./Tempdata", recursive = TRUE) # Delete tif directory
+
 
 # Damage function ---------------------------------------------------------
 # "a_tif" is directory location of a raster (doesn't need to be tif), "n" is number of samples per polygon
