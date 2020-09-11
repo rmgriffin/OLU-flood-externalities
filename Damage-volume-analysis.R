@@ -3,9 +3,10 @@ rm(list=ls()) # Clears workspace
 
 #system("sudo apt install libgeos-dev libproj-dev libgdal-dev libudunits2-dev -y") # Install linux geospatial dependencies 
 
-
-
 # Install/call libraries
+install.packages("renv")
+renv::init()
+
 PKG <- c("googledrive","tidyverse", "rgdal","raster","exactextractr", "sf", "furrr","data.table","filesstrings")
 
 for (p in PKG) {
@@ -13,7 +14,8 @@ for (p in PKG) {
     install.packages(p)
     require(p,character.only = TRUE)}
 }
-rm(PKG,p)
+
+renv::snapshot()
 
 # Unzip code function -----------------------------------------------------
 decompress_file <- function(file, directory, .file_cache = FALSE) {
@@ -121,7 +123,7 @@ rm(CA, RC)
 Exposure$merge_id<-seq(1:nrow(Exposure))
 # Deleting data
 setwd("..")
-unlink("./Tempdata", recursive = TRUE) # Delete tif directory
+unlink("./Tempdata", recursive = TRUE) # Delete Tempdata directory
 
 
 # Damage function ---------------------------------------------------------
