@@ -1,0 +1,755 @@
+---
+title: "Flood damage assessment V2 visuals"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Clear workspace
+rm(list=ls())
+# Packages
+PKG <- c("multcomp","multcompView","tidyverse","scales","gridExtra","ggthemes","viridis","knitr","sf","exactextractr","raster","data.table","sf", "RColorBrewer","tmap") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
+
+for (p in PKG) {
+  if(!require(p,character.only = TRUE)) {  
+    install.packages(p)
+    require(p,character.only = TRUE)}
+}
+rm(PKG,p)
+# Load data
+tresult<-read.csv("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/tresult_v2.csv")
+tresult.ni<-tresult[which(tresult$Name!=tresult$scen.x),]
+```
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+## Net damage from all OLU protection scenarios across OLUs, compared to baseline conditions, for all SLR scenarios  
+
+```{r, echo=FALSE}
+# To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
+getPalette<-colorRampPalette(brewer.pal(9, "RdBu")) # function, change if different palette is desired
+cols<-getPalette(15) # Needs to be odd number to ensure midpoint color is correct
+cols<-cols[3:14] # Asymmetric diverging palette
+#show_col(cols)
+colscale<-c(10^10,10^8,10^6,10^4,10^2,0,-10^2,-10^4,-10^6,-10^8,-10^10,-10^12)
+labs<-expression(paste("10"^"10"),paste("10"^"8"),paste("10"^"6"),paste("10"^"4"),paste("10"^"2"),0,paste("-10"^"2"),paste("-10"^"4"),paste("-10"^"6"),paste("-10"^"8"),paste("-10"^"10"),paste("-10"^"12"))
+#colscale<-unname(quantile(tresult.ni$net.damage, probs = seq(0, 1, 1/4)))
+#colscale<-c(min(tresult$net.damage), min(tresult$net.damage)/2, min(tresult$net.damage)/4, min(tresult$net.damage)/8, 0, max(tresult$net.damage)/8, max(tresult$net.damage)/4, max(tresult$net.damage)/2, max(tresult$net.damage))
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+
+ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) + 
+  geom_tile() +
+  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Damage ($)", guide=guide_legend(), limits = c(-10^12,10^10)) + # labels = scales::trans_format("log10", scales::math_format(10^.x)) <== doesn't work with negative logs
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(title = "Alt. 1 - More classes", x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot 
+
+```
+
+```{r, echo=FALSE}
+# To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
+getPalette<-colorRampPalette(brewer.pal(9, "RdBu")) # function, change if different palette is desired
+cols<-getPalette(9) # Needs to be odd number to ensure midpoint color is correct
+#cols<-cols[3:14] # Asymmetric diverging palette
+#show_col(cols)
+colscale<-c(10^12,10^9,10^6,10^3,0,-10^3,-10^6,-10^9,-10^12)
+labs<-expression(paste("10"^"12"),paste("10"^"9"),paste("10"^"6"),paste("10"^"3"),0,paste("-10"^"3"),paste("-10"^"6"),paste("-10"^"9"),paste("-10"^"12"))
+#colscale<-unname(quantile(tresult.ni$net.damage, probs = seq(0, 1, 1/4)))
+#colscale<-c(min(tresult$net.damage), min(tresult$net.damage)/2, min(tresult$net.damage)/4, min(tresult$net.damage)/8, 0, max(tresult$net.damage)/8, max(tresult$net.damage)/4, max(tresult$net.damage)/2, max(tresult$net.damage))
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+
+ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) + 
+  geom_tile() + 
+  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Damage ($)", guide=guide_legend(), limits = c(-10^12,10^12)) + # labels = scales::trans_format("log10", scales::math_format(10^.x)) <== doesn't work with negative logs
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(title = "Alt. 2 - Fewer classes", x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot
+```
+
+```{r, echo=FALSE}
+ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) + 
+  geom_tile() + 
+  geom_hline(yintercept=17.5, linetype="dashed", color = "black") +
+  geom_vline(xintercept=17.5, linetype="dashed", color = "black") +
+  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Damage ($)", guide=guide_legend(), limits = c(-10^12,10^12)) + # labels = scales::trans_format("log10", scales::math_format(10^.x)) <== doesn't work with negative logs
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(title = "Alt. 3 - Fewer classes, line dividing south and north bay (black dashed)", x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot
+```
+
+## Net external damage from protection scenarios - individual impacts on external OLUs. Dashed vertical lines are sample means.
+
+```{r, echo=FALSE}
+tresult.ni$SLR<-as.factor(tresult.ni$SLR)
+
+# ggplot(data = tresult.ni, aes(x=net.damage, fill = SLR, color = SLR)) +
+#   geom_histogram(alpha=0.25, position="identity", bins = 100) +
+#   scale_color_brewer(palette="Blues") +
+#   scale_fill_brewer(palette="Blues") +
+#   xlim(-100000000,100000000) +
+#   theme_minimal() 
+
+mu<-tresult.ni %>%
+  group_by(SLR) %>%
+  summarize(nd.mean = mean(net.damage,na.rm=TRUE))
+
+getPalette<-colorRampPalette(brewer.pal(9, "YlGnBu")) # function, change if different palette is desired
+cols<-getPalette(20) # Needs to be odd number to ensure midpoint color is correct
+cols<-cols[c(5,10,15,20)]
+
+ggplot(data = tresult.ni, aes(x=net.damage, color = SLR)) +
+  stat_density(geom = "line", position = "identity") +
+  #geom_histogram(alpha=0.8, position="identity") +
+  geom_vline(data=mu, aes(xintercept=nd.mean), linetype="dashed", color=cols) +
+  scale_color_manual(values=cols) +    
+  coord_cartesian(xlim = c(-10^7.5,10^7.5)) +
+  theme_minimal() +
+  labs(title = "Mean external impact from a protection scenario on a given OLU", x = "Net external damage", y = "Density") 
+
+# ggplot(data = tresult.ni, aes(x=net.damage)) +
+#   geom_histogram() +
+#   xlim(-100000000,100000000) +
+#   facet_wrap(vars(SLR)) +
+#   theme_minimal() 
+```
+
+```{r, echo=FALSE}
+
+s.df.ni<-tresult.ni %>%
+  group_by(SLR,scen.x) %>%
+  summarize_at(vars(net.damage),sum)
+
+mu<-s.df.ni %>%
+  group_by(SLR) %>%
+  summarize(nd.mean = mean(net.damage,na.rm=TRUE))
+
+ggplot(data = s.df.ni, aes(x=net.damage, color = SLR)) +
+  stat_density(geom = "line", position = "identity") +
+  #geom_histogram(alpha=0.8, position="identity") +
+  geom_vline(data=mu, aes(xintercept=nd.mean), linetype="dashed", color=cols) +
+  scale_color_manual(values=cols) +    
+  #xlim(-10^7.5,10^7.5) +
+  theme_minimal() +
+  labs(title = "Summed external impact from protection scenarios", x = "Net external damage", y = "Density") 
+```
+
+```{r, echo=FALSE, fig.align="center"}
+mu<-s.df.ni %>%
+  group_by(SLR) %>%
+  summarize("max(net damage)" = max(net.damage))
+
+kable(mu, caption = "Max external net damage from a protection scenario by SLR", digits = 1, format.args = list(big.mark = ","))
+
+```
+
+## Which OLUs have more to lose from external protection efforts?
+```{r, echo=FALSE, fig.align="center"}
+tresult.ni$Name<-as.factor(tresult.ni$Name)
+
+# # Helper functions for reordering boxplot with facets https://stackoverflow.com/questions/47090344/how-to-properly-sort-facet-boxplots-by-median
+# reorder_within <- function(x, by, within, fun = mean, sep = "___", ...) {
+#   new_x <- paste(x, within, sep = sep)
+#   stats::reorder(new_x, by, FUN = fun)
+# }
+# 
+# scale_x_reordered <- function(..., sep = "___") {
+#   reg <- paste0(sep, ".+$")
+#   ggplot2::scale_x_discrete(labels = function(x) gsub(reg, "", x), ...)
+# }
+
+
+ggplot(data = tresult.ni, aes(x=reorder(Name,-net.damage,FUN=median),y=net.damage)) +
+  geom_boxplot(outlier.shape = NA) +
+  coord_cartesian(ylim = c(-100000000,100000000)) + 
+  #facet_wrap(vars(SLR)) +
+  theme_minimal() +
+  labs(title = "Net internal damage by OLU from external protection scenarios", x = "OLU", y = "Net Damage") 
+  #geom_jitter(shape=16, position=position_jitter(0.2))
+
+```
+
+## Protecting San Mateo OLU (OLU 26) leads to very large external benefits for Belmont-Redwood OLU (OLU 25) under 50cm SLR
+
+```{r, echo=FALSE, fig.cap="Same scale all panels", out.width = '100%', fig.align="center"}
+knitr::include_graphics("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/Figs/Flood progression and OLU7/V2/Presentation1.png")
+```
+
+## Relationship between OLU type and damages
+
+```{r, include=FALSE}
+df<-tresult
+# Change in external damages
+df<-df[which(df$Name!=df$scen.x),]
+# Total external damages by OLU/SLR
+df<-df %>%
+  group_by(SLR,scen.x) %>%
+  summarize_at(vars(net.damage),sum)
+# NLCD 2016 raster
+NLCD<-raster("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/NLCD_2016_Land_Cover_L48_20190424/NLCD_2016_Land_Cover_L48_20190424.tif")
+# OLU shapefile
+OLU<-st_read("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/olu_NAD83_10N.gpkg")
+OLU<-OLU %>% arrange(OLU_ID)
+OLU<-st_transform(OLU,crs=crs(NLCD))
+tdf<-exact_extract(NLCD,OLU)
+tdf<-rbindlist(tdf,idcol = TRUE)
+# Cross tabulate OLU and land cover classes
+tdf<-as.data.frame(table(tdf$.id,tdf$value))
+# Long to wide format of land cover and flood damage data 
+tdf<-spread(tdf,Var2,Freq) # http://www.cookbook-r.com/Manipulating_data/Converting_data_between_wide_and_long_format/
+df<-spread(df,SLR,net.damage)
+# Merge
+df<-merge(tdf,df,by.x="Var1",by.y="scen.x")
+colnames(df)<-c("Var1", "X11","X21","X22","X23","X24","X31","X41","X42","X43","X52","X71","X81","X82","X90","X95","X128","SLR50","SLR100","SLR150","SLR200")
+# Elevation
+Ele<-raster("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/dem90m/olu_dem90m.tif")
+OLU<-st_transform(OLU,crs(Ele))
+OLU$meanele<-exact_extract(Ele,OLU, "mean")
+df<-merge(df,OLU,by.x="Var1",by.y="OLU_ID")
+# Compressing classes 
+dfm<-df
+dfm$X1<-dfm$X11
+dfm$X2<-dfm$X21+dfm$X22+dfm$X23+dfm$X24
+dfm$X3<-dfm$X31
+dfm$X4<-dfm$X41+dfm$X42+dfm$X43
+dfm$X5<-dfm$X52
+dfm$X7<-dfm$X71
+dfm$X8<-dfm$X81+dfm$X82
+dfm$X9<-dfm$X90+dfm$X95
+# Percentages
+dfp<-df[2:17]
+dfptotal<-rowSums(dfp)
+dfp<-dfp/dfptotal
+# rowSums(dfp) # Confirming all rows add to 1
+dfp<-cbind(Var1=df$Var1,dfp,SLR50=df$SLR50,SLR100=df$SLR100,SLR150=df$SLR150,SLR200=df$SLR200,meanele=df$meanele)
+# Long regression using all SLR scenarios
+dfa<-gather(dfp,SLR,net.damage,SLR50:SLR200)
+# Qualitative assessment by OLU type
+OLUclass<-df %>%
+  group_by(Geomorphic) %>%
+  summarize_at(vars(SLR50,SLR100,SLR150,SLR200,meanele),mean)
+```
+
+*OLU geomorphic type*
+
+```{r, echo = FALSE, fig.align="center"}
+kable(OLUclass, caption = "Mean external damage from protection, by OLU geomorphic type", digits = 1, format.args = list(big.mark = ","))
+```
+
+*NLCD analysis*
+
+```{r figurename, echo=FALSE, fig.cap="NLCD 2016 Land Use Classification", out.width = '33%', fig.align="center"}
+knitr::include_graphics("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/NLCD_Colour_Classification_Update.jpg")
+```
+
+**Landcover within geomorphic types**
+
+```{r, echo = FALSE, fig.align="center"}
+lc<-df
+lc$X2<-lc$X21+lc$X22+lc$X23+lc$X24
+lc$X4<-lc$X41+lc$X42+lc$X43
+lc$X8<-lc$X81+lc$X82
+lc$X9<-lc$X90+lc$X95
+
+lc<-subset(lc, select = c(X11,X2,X31,X4,X52,X71,X8,X9,Name,Geomorphic)) # Drops "X128"
+
+lc<-lc %>%
+  pivot_longer(!c(Name, Geomorphic), names_to="landcover", values_to="area")
+
+# Area in km2, based on 30m2 raster cell size
+lc$area<-(lc$area*900)/1000000
+
+# Percentage of landcover vs total area
+lc<-lc %>%
+  group_by(Name) %>%
+  mutate(Ptg = area/sum(area))
+
+# Boxplot by total area
+ggplot(lc, aes(y=landcover,x=area,fill=Geomorphic))+
+  geom_boxplot() +
+  theme_minimal() +
+  labs(y = "NLCD Land Cover Class", x = "Area (km2)", fill = "OLU Geomorphic Type") +
+  scale_y_discrete(labels=c("X11" = "Open Water", 
+                              "X2" = "Development",
+                              "X31" = "Barren",
+                              "X4" = "Forest",
+                              "X52" = "Shrub",
+                              "X71" = "Grassland",
+                              "X8" = "Pasture/Crops",
+                              "X9" = "Wetlands"))
+
+# # Boxplot by percent area
+# ggplot(lc, aes(x=landcover,y=Ptg,fill=Geomorphic))+
+#   geom_boxplot() +
+#   theme_minimal()
+
+# Tukey test for wetlands (area)
+amod<-aov(area~Geomorphic,data=lc,subset=landcover=="X9") # change this for relevant comparison
+#plot(amod) 
+TukeyHSD(amod)
+
+# Tukey test for grasslands (area)
+amod<-aov(area~Geomorphic,data=lc,subset=landcover=="X71") # change this for relevant comparison
+#plot(amod)
+TukeyHSD(amod)
+
+# Tukey test for agricultural (area)
+amod<-aov(area~Geomorphic,data=lc,subset=landcover=="X8") # change this for relevant comparison
+#plot(amod) 
+TukeyHSD(amod)
+```
+
+
+**Regression 1** OLS regression of the general form *net external damage = f(mean elevation)*: observations at the OLU level (n=30), SLR 200
+
+```{r, echo = FALSE, fig.align="center"}
+# Regression
+summary(mr<-lm(SLR200 ~ meanele,df))
+```
+
+**Regression 2** OLS regression of the general form *net external damage = f(land cover, mean elevation)*: observations at the OLU level (n=30), SLR 200
+
+```{r, echo = FALSE, fig.align="center"}
+# Regression
+summary(mr<-lm(SLR200 ~ X11+X21+X23+X24+X31+X41+X42+X43+X52+X71+X81+X90+X95+meanele,df))
+```
+
+**Regression 3** Same as regression 2, but consolidating land cover types
+
+```{r, echo = FALSE, fig.align="center"}
+# Regression
+summary(mr<-lm(SLR200 ~ X1+X2+X3+X4+X5+X7+X8+X9+meanele,dfm))
+```
+
+**Regression 3** Same as regression 2, but unconsolidated and using percentage of land cover type by OLU
+
+```{r, echo = FALSE, fig.align="center"}
+# Regression
+summary(mr<-lm(SLR200 ~ X11+X21+X23+X24+X31+X41+X42+X43+X52+X71+X81+X90+X95+meanele,dfp))
+```
+
+**Regression 4** Unconsolidated regression using percentage of land cover type by OLU, all SLR scenarios
+
+```{r, echo = FALSE, fig.align="center"}
+summary(mr<-lm(net.damage ~ X11+X21+X23+X24+X31+X41+X42+X43+X52+X71+X81+X90+X95+meanele,dfa))
+```
+
+## Net benefits from protection across the entire bay
+
+```{r, include = FALSE}
+setwd("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/")
+Exposure<-st_read("Exposure4OLU3.gpkg")
+## Replacement cost values for structures
+# Import replacement costs
+RC<-read.csv("Replacement_cost.csv")
+# Create structure values by census block
+Exposure$V_RES1<-as.numeric(subset(RC,RC$Occup.Types == "RES1", select = "St_val")) * Exposure$RES1
+Exposure$V_RES2<-as.numeric(subset(RC,RC$Occup.Types == "RES2", select = "St_val")) * Exposure$RES2
+Exposure$V_RES3A<-as.numeric(subset(RC,RC$Occup.Types == "RES3A", select = "St_val")) * Exposure$RES3A
+Exposure$V_RES3B<-as.numeric(subset(RC,RC$Occup.Types == "RES3B", select = "St_val")) * Exposure$RES3B
+Exposure$V_RES3C<-as.numeric(subset(RC,RC$Occup.Types == "RES3C", select = "St_val")) * Exposure$RES3C
+Exposure$V_RES3D<-as.numeric(subset(RC,RC$Occup.Types == "RES3D", select = "St_val")) * Exposure$RES3D
+Exposure$V_RES3E<-as.numeric(subset(RC,RC$Occup.Types == "RES3E", select = "St_val")) * Exposure$RES3E
+Exposure$V_RES3F<-as.numeric(subset(RC,RC$Occup.Types == "RES3F", select = "St_val")) * Exposure$RES3F
+Exposure$V_RES4<-as.numeric(subset(RC,RC$Occup.Types == "RES4", select = "St_val")) * Exposure$RES4
+Exposure$V_RES5<-as.numeric(subset(RC,RC$Occup.Types == "RES5", select = "St_val")) * Exposure$RES5
+Exposure$V_RES6<-as.numeric(subset(RC,RC$Occup.Types == "RES6", select = "St_val")) * Exposure$RES6
+Exposure$V_COM1<-as.numeric(subset(RC,RC$Occup.Types == "COM1", select = "St_val")) * Exposure$COM1
+Exposure$V_COM2<-as.numeric(subset(RC,RC$Occup.Types == "COM2", select = "St_val")) * Exposure$COM2
+Exposure$V_COM3<-as.numeric(subset(RC,RC$Occup.Types == "COM3", select = "St_val")) * Exposure$COM3
+Exposure$V_COM4<-as.numeric(subset(RC,RC$Occup.Types == "COM4", select = "St_val")) * Exposure$COM4
+Exposure$V_COM5<-as.numeric(subset(RC,RC$Occup.Types == "COM5", select = "St_val")) * Exposure$COM5
+Exposure$V_COM6<-as.numeric(subset(RC,RC$Occup.Types == "COM6", select = "St_val")) * Exposure$COM6
+Exposure$V_COM7<-as.numeric(subset(RC,RC$Occup.Types == "COM7", select = "St_val")) * Exposure$COM7
+Exposure$V_COM8<-as.numeric(subset(RC,RC$Occup.Types == "COM8", select = "St_val")) * Exposure$COM8
+Exposure$V_COM9<-as.numeric(subset(RC,RC$Occup.Types == "COM9", select = "St_val")) * Exposure$COM9
+Exposure$V_COM10<-as.numeric(subset(RC,RC$Occup.Types == "COM10", select = "St_val")) * Exposure$COM10
+Exposure$V_IND1<-as.numeric(subset(RC,RC$Occup.Types == "IND1", select = "St_val")) * Exposure$IND1
+Exposure$V_IND2<-as.numeric(subset(RC,RC$Occup.Types == "IND2", select = "St_val")) * Exposure$IND2
+Exposure$V_IND3<-as.numeric(subset(RC,RC$Occup.Types == "IND3", select = "St_val")) * Exposure$IND3
+Exposure$V_IND4<-as.numeric(subset(RC,RC$Occup.Types == "IND4", select = "St_val")) * Exposure$IND4
+Exposure$V_IND5<-as.numeric(subset(RC,RC$Occup.Types == "IND5", select = "St_val")) * Exposure$IND5
+Exposure$V_IND6<-as.numeric(subset(RC,RC$Occup.Types == "IND6", select = "St_val")) * Exposure$IND6
+Exposure$V_AGR1<-as.numeric(subset(RC,RC$Occup.Types == "AGR1", select = "St_val")) * Exposure$AGR1
+Exposure$V_GOV1<-as.numeric(subset(RC,RC$Occup.Types == "GOV1", select = "St_val")) * Exposure$GOV1
+Exposure$V_GOV2<-as.numeric(subset(RC,RC$Occup.Types == "GOV2", select = "St_val")) * Exposure$GOV2
+Exposure$V_REL1<-as.numeric(subset(RC,RC$Occup.Types == "REL1", select = "St_val")) * Exposure$REL1
+Exposure$V_EDU1<-as.numeric(subset(RC,RC$Occup.Types == "EDU1", select = "St_val")) * Exposure$EDU1
+Exposure$V_EDU2<-as.numeric(subset(RC,RC$Occup.Types == "EDU2", select = "St_val")) * Exposure$EDU2
+# County level cost adjustments https://stackoverflow.com/questions/38750535/extract-the-first-2-characters-in-a-string
+Exposure$FIPS<-substr(Exposure$CnssBlc,start=1,stop=5)
+CA<-read.csv("hzMeansCountyLocationFactor.csv", header = TRUE, colClasses=c("CountyFIPS"="character"))
+Exposure$CostAdj<-(CA[match(Exposure$FIPS,CA$CountyFIPS),3])
+# Import depth damage curves for structures and contents
+Co<-read.csv("Contents_damage.csv")
+St<-read.csv("Structures_damage.csv")
+# Removing unneeded columns 
+Exposure<-subset(Exposure, select = -c(Join_Count, TARGET_FID, Join_Cou_1, TARGET_F_1, Join_Cou_2, TARGET_F_2, Join_Cou_3, TARGET_F_3, Join_Cou_4, TARGET_F_4, RES1, RES2, RES3A, RES3B, RES3C, RES3D, RES3E, RES3F, RES4, RES5, RES6, COM1, COM2, COM3, COM4, COM5, COM6, COM7, COM8, COM9, COM10, IND1, IND2, IND3, IND4, IND5, IND6, AGR1, REL1, GOV1, GOV2, EDU1, EDU2))
+# Removing unneeded variables
+rm(CA, RC)
+# Merge id (for water depth extraction)
+Exposure$merge_id<-seq(1:nrow(Exposure))
+# Sum of replacement value for each census block
+Exposure$geom<-NULL
+Exposure$trv<-rowSums(Exposure[3:35])
+# OLU summed total replacement value and number of census blocks
+Exp<-Exposure %>%
+  group_by(Name) %>%
+  summarize_at(vars(trv), list(numCB=length,sumtrv=sum))
+# Renaming OLUs using scenario naming convention
+Exp$scen.x<-as.character(Exp$Name)
+Exp$scen.x<-ifelse(Exp$scen.x == "Golden Gate",30,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Mission - Islais",29,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Yosemite - Visitacion",28,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Colma - San Bruno",27,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "San Mateo",26,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Belmont - Redwood",25,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "San Francisquito",24,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Stevens",23,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Santa Clara Valley",22,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Mowry",21,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Alameda",20,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "San Lorenzo",19,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "San Leandro",18,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "East Bay Crescent",17,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Point Richmond",16,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Wildcat",15,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Pinole",14,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Carquinez South",13,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Walnut",12,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Port Chicago",11,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Montezuma Slough",10,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Suisun Slough",9,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Carquinez North",8,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Napa - Sonoma",7,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Petaluma",6,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Novato",5,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Gallinas",4,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "San Rafael",3,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Corte Madera",2,Exp$scen.x)
+Exp$scen.x<-ifelse(Exp$scen.x == "Richardson",1,Exp$scen.x)
+Exp$scen.x<-as.numeric(Exp$scen.x)
+# tresult$SLR as character, to maintain variable ordering below
+tresult$SLR<-as.character(tresult$SLR)
+tresult$SLR<-ifelse(tresult$SLR=="50","050",tresult$SLR)
+tresult<-tresult[order(tresult$SLR),]
+# Internal change in damage and census blocks impacted by OLU
+cf.i<-tresult[which(tresult$Name==tresult$scen.x),]
+cf.i<-cf.i %>%
+  pivot_wider(id_cols = c(scen.x,SLR), names_from=SLR, values_from = c(net.damage,net.impact))
+# External change in damage and census blocks impacted by OLU
+cf.e<-tresult[which(tresult$Name!=tresult$scen.x),]
+cf.e<-cf.e %>%
+  group_by(SLR,scen.x) %>%
+  summarize_at(vars(net.damage,net.impact),sum)
+cf.e<-cf.e %>%
+  pivot_wider(id_cols = c(scen.x,SLR), names_from=SLR, values_from = c(net.damage,net.impact))
+# Merge into one table
+cf<-left_join(Exp, cf.i, by='scen.x') %>%
+                left_join(., cf.e, by='scen.x') 
+colnames(cf)<-c("Name","numCB","sumtrv","OLUid","i.dmg.050","i.dmg.100","i.dmg.150", "i.dmg.200","i.cb.050","i.cb.100","i.cb.150", "i.cb.200","e.dmg.050","e.dmg.100","e.dmg.150", "e.dmg.200","e.cb.050","e.cb.100","e.cb.150", "e.cb.200")
+# Overall effect
+cf2<-cf
+cf2$dmg.050<-cf2$i.dmg.050+cf2$e.dmg.050
+cf2$dmg.100<-cf2$i.dmg.100+cf2$e.dmg.100
+cf2$dmg.150<-cf2$i.dmg.150+cf2$e.dmg.150
+cf2$dmg.200<-cf2$i.dmg.200+cf2$e.dmg.200
+cf2$cb.050<-cf2$i.cb.050+cf2$e.cb.050
+cf2$cb.100<-cf2$i.cb.100+cf2$e.cb.100
+cf2$cb.150<-cf2$i.cb.150+cf2$e.cb.150
+cf2$cb.200<-cf2$i.cb.200+cf2$e.cb.200
+excl<-names(cf2) %in% c("i.dmg.050","i.dmg.100","i.dmg.150","i.dmg.200","i.cb.050","i.cb.100","i.cb.150","i.cb.200","e.dmg.050","e.dmg.100","e.dmg.150", "e.dmg.200","e.cb.050","e.cb.100","e.cb.150", "e.cb.200")
+cf2<-cf2[!excl]
+cf2<-cf2[order(cf2$OLUid),]
+cf2$sumtrv<-round(cf2$sumtrv/1000000, 1) # Total replacement value in millions
+cf2$dmg.050<-round(cf2$dmg.050/1000000, 1)
+cf2$dmg.100<-round(cf2$dmg.100/1000000, 1)
+cf2$dmg.150<-round(cf2$dmg.150/1000000, 1)
+cf2$dmg.200<-round(cf2$dmg.200/1000000, 1)
+cf2<-subset(cf2, select = -c(numCB,cb.050,cb.100,cb.150,cb.200))
+cf2<-cf2[,c(3,1,2,4,5,6,7)]
+
+# Geomorphic type and area
+gt<-subset(OLU, select = c(Name, Geomorphic, geom))
+gt$area<-st_area(gt)
+cf2<-left_join(cf2, gt, by='Name')
+cf2$area<-(as.vector(cf2$area)/1000000) # Removing units attribute (m2) and converting to km2
+cf2$trvkm2<-cf2$sumtrv/cf2$area
+
+boxplot(trvkm2~Geomorphic,data=cf2)
+# Tukey test
+amod<-aov(trvkm2~Geomorphic,data=cf2) # change this for relevant comparison
+#plot(amod) 
+TukeyHSD(amod)
+
+```
+
+```{r, echo = FALSE, fig.align="center"}
+kable(cf2, caption = "Overall net benefit and net impacted census blocks from protection, across SLR scenarios. Net = internal + external", digits = 1, format.args = list(big.mark = ","))
+```
+
+*sumrtv = total replacement value of structures*, *numCB = total # of census blocks*, 
+
+## Water attributes by OLU
+
+```{r, include=FALSE, fig.align="center"}
+fresult<-read.csv("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/fresult_v2.csv")
+fresult.ni<-fresult[which(fresult$OLU!=fresult$scen.x),]
+```
+
+```{r, echo=FALSE, fig.align="center"}
+getPalette<-colorRampPalette(brewer.pal(9, "RdBu")) # function, change if different palette is desired
+cols<-getPalette(11) # Needs to be odd number to ensure midpoint color is correct
+cols<-cols[2:11] # Asymmetric diverging palette
+colscale<-c(10^8,10^6,10^4,10^2,0,-10^2,-10^4,-10^6,-10^8,-10^10)
+labs<-expression(paste("10"^"8"),paste("10"^"6"),paste("10"^"4"),paste("10"^"2"),0,paste("-10"^"2"),paste("-10"^"4"),paste("-10"^"6"),paste("-10"^"8"),paste("-10"^"10"))
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.area)) + 
+  geom_tile() + 
+  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Area (Square Meters)", guide=guide_legend(), limits = c(-10^10,10^8)) +
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(title = "Alt. 1 - Area (Square Meters)", x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.text.align = 0) 
+
+```
+
+```{r, echo=FALSE, fig.align="center"}
+cols<-getPalette(11) # Needs to be odd number to ensure midpoint color is correct
+cols<-cols[2:11] # Asymmetric diverging palette
+colscale<-c(10^8,10^6,10^4,10^2,0,-10^2,-10^4,-10^6,-10^8,-10^10)
+labs<-expression(paste("10"^"8"),paste("10"^"6"),paste("10"^"4"),paste("10"^"2"),0,paste("-10"^"2"),paste("-10"^"4"),paste("-10"^"6"),paste("-10"^"8"),paste("-10"^"10"))
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) + 
+  geom_tile() + 
+  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Volume (Cubic Meters)", guide=guide_legend(), limits = c(-10^10,10^8)) +
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(title = "Alt. 2 - Volume (Cubic Meters)", x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.text.align = 0) 
+```
+
+```{r, echo=FALSE, fig.align="center"}
+cols<-getPalette(9) # Needs to be odd number to ensure midpoint color is correct
+cols<-cols[2:9] # Asymmetric diverging palette
+colscale<-c(10^9,10^6,10^3,0,-10^3,-10^6,-10^9,-10^12)
+labs<-expression(paste("10"^"9"),paste("10"^"6"),paste("10"^"3"),0,paste("-10"^"3"),paste("-10"^"6"),paste("-10"^"9"),paste("-10"^"12"))
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) + 
+  geom_tile() + 
+  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Volume (Cubic Meters)", guide=guide_legend(), limits = c(-10^12,10^9)) +
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(title = "Alt. 3 - Fewer classes, volume", x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.text.align = 0) 
+```
+
+```{r, echo=FALSE, fig.align="center"}
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) + 
+  geom_tile() + 
+    geom_hline(yintercept=17.5, linetype="dashed", color = "black") +
+  geom_vline(xintercept=17.5, linetype="dashed", color = "black") +
+  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Volume (Cubic Meters)", guide=guide_legend(), limits = c(-10^12,10^9)) +
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(title = "Alt. 4 - Lines, volume", x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.text.align = 0) 
+ggsave(file="name.eps")
+```
+
+```{r, include=FALSE}
+Pop<-raster("C:/Users/XPSXIII/Documents/Github/CA-recreation-coastal-hazards/Data/dasymetric_us_20160208.tif")
+OLU<-st_transform(OLU, st_crs(Pop))
+OLU$sumpop<-exact_extract(Pop, OLU, "sum")
+sum(OLU$sumpop)
+```
+
+```{r, echo=FALSE, fig.align="center"}
+ggplot(OLU) +
+  geom_sf(aes(fill = sumpop)) +
+  theme_minimal() +
+  labs(fill="Population")
+```
+
+## Figure options for Highway 37 example
+```{r, include=FALSE}
+H37<-st_read("C:/Users/XPSXIII/Documents/Github/CA-recreation-coastal-hazards/Data/Roads_2015.gpkg")
+H37<-filter(H37, FULLNAME %in% c("State Rte 37")) # Leaves out "State Hwy 37" to focus more on OLU7
+H37<-st_transform(H37, st_crs(OLU))
+```
+
+
+```{r, echo=FALSE, fig.align="center"}
+# Flood maps are in meters
+SLR100<-raster("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/Figs/Flood progression and OLU7/base_SLR100_olu_00000-0-0-000-000000-00000-00-00000-00_depth.tif")
+
+OLU7<-filter(OLU, OLU_ID %in% c("7")) # http://zevross.com/blog/2018/10/02/creating-beautiful-demographic-maps-in-r-with-the-tidycensus-and-tmap-packages/
+OLUn7<-filter(OLU, !OLU_ID %in% c("7")) 
+
+getPalette<-colorRampPalette(brewer.pal(5, "Blues")) # function, change if different palette is desired
+cols<-getPalette(5) 
+
+# Guidance for tmaps package https://geocompr.robinlovelace.net/adv-map.html
+
+tmap_options(max.raster = c(plot = 1e7, view = 1e6)) # 4e7
+
+OLU7f<-tm_shape(SLR100, bbox=H37) +
+  tm_raster(style = "fixed", breaks=seq(0, 5, by=1), labels = c("<1","1 - 2","2 - 3","3 - 4",">4"), palette = cols, title = "Water Depth (m)", colorNA = "white", textNA = "") +
+  tm_shape(OLU) +
+  tm_borders(col = "grey") +
+  tm_scale_bar() +
+  tm_shape(H37) +
+  tm_lines(col = "black", lty = "dashed") +
+  tm_layout(frame = FALSE) 
+  #tm_shape(OLU7) +
+  #tm_borders(col = "black", lwd = 1.25)
+
+OLU7f
+
+#tmap_save(OLU7f,"C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/Figs/Flood progression and OLU7/OLU7f.eps") # https://rdrr.io/cran/tmap/man/tmap_save.html
+```
+
+## Figure options for OLUs 25 and 26
+
+```{r, echo=FALSE, fig.align="center"}
+# Flood maps are in meters
+SLR50<-raster("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/Figs/Flood progression and OLU7/base_SLR50_olu_00000-0-0-000-000000-00000-00-00000-00_depth.tif")
+SLR50.26<-raster("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/Figs/Flood progression and OLU7/v2_OLU26_SLR50_olu_00000-0-0-000-000000-00000-00-00100-00_depth.tif")
+SLR100.26<-raster("C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/Figs/Flood progression and OLU7/v2_OLU26_SLR100_olu_00000-0-0-000-000000-00000-00-00100-00_depth.tif")
+
+
+OLU2526<-filter(OLU, OLU_ID %in% c("25","26")) # http://zevross.com/blog/2018/10/02/creating-beautiful-demographic-maps-in-r-with-the-tidycensus-and-tmap-packages/
+OLU26<-filter(OLU, OLU_ID %in% c("26"))
+
+
+getPalette<-colorRampPalette(brewer.pal(5, "Blues")) # function, change if different palette is desired
+cols<-getPalette(5) 
+
+#tmap_options(max.raster = c(plot = 1e5, view = 1e5)) # 3e7
+
+# Modifying the bounding box https://www.jla-data.net/eng/adjusting-bounding-box-of-a-tmap-map/
+bbox_new<-st_bbox(OLU2526)
+xrange <- bbox_new$xmax - bbox_new$xmin
+yrange <- bbox_new$ymax - bbox_new$ymin
+  bbox_new[1] <- bbox_new[1] + (0.25 * xrange) # xmin - left
+  bbox_new[3] <- bbox_new[3] - (0.35 * xrange) # xmax - right
+  bbox_new[2] <- bbox_new[2] + (0.40 * yrange) # ymin - bottom
+  bbox_new[4] <- bbox_new[4] - (0.10 * yrange) # ymax - top
+bbox_new <- bbox_new %>%  # take the bounding box ...
+  st_as_sfc() # ... and make it a sf polygon
+
+m50<-tm_shape(SLR50, bbox=bbox_new) +
+  tm_raster(style = "fixed", breaks=seq(0, 5, by=1), labels = c("<1","1 - 2","2 - 3","3 - 4",">4"), palette = cols, title = "Water Depth (m)",colorNA = "white",textNA = "") +
+  tm_shape(OLU) +
+  tm_borders(col = "grey") +
+  tm_layout(frame = TRUE, legend.show = TRUE) +
+  #tm_scale_bar(position = c("left","bottom")) +
+  #tm_shape(OLU26) +
+  #tm_borders(col = "black", lwd = 1.25) +
+  tm_legend(legend.position = c("left", "bottom"))   
+
+m100<-tm_shape(SLR100, bbox=bbox_new) +
+  tm_raster(style = "fixed", breaks=seq(0, 5, by=1), labels = c("<1","1 - 2","2 - 3","3 - 4",">4"), palette = cols, title = "Water Depth (m)",colorNA = "white",textNA = "") +
+  tm_shape(OLU) +
+  tm_borders(col = "grey") +
+  tm_layout(frame = TRUE, legend.show = FALSE) +
+  tm_scale_bar(position = c("left","bottom")) +
+  #tm_shape(OLU26) +
+  #tm_borders(col = "black", lwd = 1.25) +
+  tm_legend(legend.position = c("left", "bottom"))
+
+m50.26<-tm_shape(SLR50.26, bbox=bbox_new) +
+  tm_raster(style = "fixed", breaks=seq(0, 5, by=1), labels = c("<1","1 - 2","2 - 3","3 - 4",">4"), palette = cols, title = "Water Depth (m)",colorNA = "white",textNA = "") +
+  tm_shape(OLU) +
+  tm_borders(col = "grey") +
+  tm_layout(frame = TRUE, legend.show = FALSE) +
+  #tm_scale_bar() +
+  tm_shape(OLU26) +
+  tm_borders(col = "black", lwd = 1.25) +
+  tm_legend(legend.position = c("left", "bottom"))
+
+m100.26<-tm_shape(SLR100.26, bbox=bbox_new) +
+  tm_raster(style = "fixed", breaks=seq(0, 5, by=1), labels = c("<1","1 - 2","2 - 3","3 - 4",">4"), palette = cols, title = "Water Depth (m)",colorNA = "white",textNA = "") +
+  tm_shape(OLU) +
+  tm_borders(col = "grey") +
+  tm_layout(frame = TRUE, legend.show = FALSE) +
+  #tm_scale_bar() +
+  tm_shape(OLU26) +
+  tm_borders(col = "black", lwd = 1.25) +
+  tm_legend(legend.position = c("left", "bottom"))
+
+OLU2526f<-tmap_arrange(m50,m100,m50.26,m100.26,ncol = 2)
+
+OLU2526f
+
+#tmap_save(OLU2526f,"C:/Users/XPSXIII/Documents/Stanford/California/Stormwater/OLUs/Floodmaps_v2/Figs/Flood progression and OLU7/OLU2526f.eps") # https://rdrr.io/cran/tmap/man/tmap_save.html
+```
+
+
+
+```{r, include=FALSE}
+## Preparing data for statistical tests of boxplot figure 
+
+# Flood Data
+stst<-cf
+stst<-subset(stst, select = c(Name,OLUid,i.dmg.050,i.dmg.100,i.dmg.150,i.dmg.200,e.dmg.050,e.dmg.100,e.dmg.150,e.dmg.200))
+stst$n.dmg.050<-stst$i.dmg.050+stst$e.dmg.050
+stst$n.dmg.100<-stst$i.dmg.100+stst$e.dmg.100
+stst$n.dmg.150<-stst$i.dmg.150+stst$e.dmg.150
+stst$n.dmg.200<-stst$i.dmg.200+stst$e.dmg.200
+# Merge with type
+stst<-left_join(stst, gt, by='Name')
+
+# Adapt the below for flood data
+
+# Internal change in damage and census blocks impacted by OLU
+bf.i<-fresult[which(fresult$OLU==fresult$scen.x),]
+bf.i<-bf.i %>%
+  pivot_wider(id_cols = c(scen.x,SLR), names_from=SLR, values_from = c(net.area,net.volume))
+# External change in damage and census blocks impacted by OLU
+bf.e<-fresult[which(fresult$OLU!=fresult$scen.x),]
+bf.e<-bf.e %>%
+  group_by(SLR,scen.x) %>%
+  summarize_at(vars(net.area,net.volume),sum)
+bf.e<-bf.e %>%
+  pivot_wider(id_cols = c(scen.x,SLR), names_from=SLR, values_from = c(net.area,net.volume))
+# Merge into one table
+bf<-left_join(Exp, bf.i, by='scen.x') %>%
+                left_join(., bf.e, by='scen.x') %>%
+                left_join(., gt, by='Name')
+
+
+colnames(bf)<-c("Name","numCB","sumtrv","OLUid","i.area.100","i.area.150","i.area.200", "i.area.050","i.vol.100","i.vol.150","i.vol.200", "i.vol.050","e.area.100","e.area.150","e.area.200", "e.area.050","e.vol.100","e.vol.150","e.vol.200", "e.vol.050", "Geomorphic")
+
+bf$n.vol.050<-bf$i.vol.050+bf$e.vol.050
+bf$n.vol.100<-bf$i.vol.100+bf$e.vol.100
+bf$n.vol.150<-bf$i.vol.150+bf$e.vol.150
+bf$n.vol.200<-bf$i.vol.200+bf$e.vol.200
+
+# Tukey test
+amod<-aov(n.dmg.200~Geomorphic,data=stst) # change this for relevant comparison
+#plot(amod) 
+TukeyHSD(amod)
+
+
+```
