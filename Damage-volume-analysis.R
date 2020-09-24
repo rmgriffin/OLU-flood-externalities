@@ -5,7 +5,7 @@ rm(list=ls()) # Clears workspace
 
 # Install/call libraries
 install.packages("renv")
-renv::init()
+#renv::init()
 
 PKG <- c("googledrive","tidyverse", "rgdal","raster","exactextractr", "sf", "furrr","data.table","filesstrings")
 
@@ -288,7 +288,7 @@ flood<-function(ras){
 ## SLR 050
 dir.create(file.path('050'), recursive = TRUE)
 setwd("./050")
-folder_url<-"https://drive.google.com/open?id=1d9l_sRsA5b0PGDwkOCPLfljnb2Ej4vnf"
+folder_url<-"https://drive.google.com/open?id=1lYNtOw1zmhAnwR1n4X69ycQw9hOA8ko4"
 folder <- drive_get(as_id(folder_url))
 files <- drive_ls(folder) # ", n_max = 2" Only two rasters for testing purposes
 plan(sequential)
@@ -315,16 +315,6 @@ system.time(future_map(rs,decompress_file,"."))
 rs<-list.files(".",recursive = TRUE)
 map(rs,file.move,".",overwrite = TRUE)
 unlink("global/", recursive = TRUE) # Remove unneeded directory
-# # Overwrite with updated tifs with new shoreline
-# folder_url<-"https://drive.google.com/open?id=1Qa3Q78bkbtUqKH-d1mqYePjA2JYG244z"
-# folder <- drive_get(as_id(folder_url))
-# files <- drive_ls(folder) # ", n_max = 2" Only two rasters for testing purposes
-# plan(sequential)
-# plan(multisession(workers = 8))
-# dl<-function(files){
-#   walk(files, ~ drive_download(as_id(.x), overwrite = TRUE))
-# }
-# system.time(future_map(files$id,dl))
 # Damage assessment
 tifs050<-list.files(".",pattern = "*.tif",recursive = TRUE)
 #plan(multisession(workers = 2)) # Uses too much memory
@@ -340,9 +330,9 @@ unlink("./050", recursive = TRUE) # Delete tif directory
 ## SLR 100
 dir.create(file.path('100'), recursive = TRUE)
 setwd("./100")
-folder_url<-"https://drive.google.com/open?id=1V30z87t-2iIyqWHHnD-cVsP0y31YNay8"
+folder_url<-"https://drive.google.com/open?id=1qRXdzE9KC16-ODh5awV1rdV3HjmcnnpT"
 folder <- drive_get(as_id(folder_url))
-files <- drive_ls(folder) # ", n_max = 2" Only two rasters for testing purposes
+files <- drive_ls(folder)
 plan(sequential)
 plan(multisession(workers = 8))
 dl<-function(files){
@@ -367,9 +357,9 @@ unlink("./100", recursive = TRUE) # Delete tif directory
 ## SLR 150
 dir.create(file.path('150'), recursive = TRUE)
 setwd("./150")
-folder_url<-"https://drive.google.com/open?id=1robC3-8H9Sy_DILHgY7iOD-xBVB2fw8r"
+folder_url<-"https://drive.google.com/open?id=149aM7lIiXwQw2mRvtluv9WkBYZR61hv4"
 folder <- drive_get(as_id(folder_url))
-files <- drive_ls(folder) # ", n_max = 2" Only two rasters for testing purposes
+files <- drive_ls(folder) 
 plan(sequential)
 plan(multisession(workers = 8))
 dl<-function(files){
@@ -394,9 +384,9 @@ unlink("./150", recursive = TRUE) # Delete tif directory
 ## SLR 200
 dir.create(file.path('200'), recursive = TRUE)
 setwd("./200")
-folder_url<-"https://drive.google.com/open?id=1E5VvxescjuYPuQk9y5OPPYlMW1fVBxUh"
+folder_url<-"https://drive.google.com/open?id=1o02Qlr0L39rVYlr7Zk7UxVUR_czsT85u"
 folder <- drive_get(as_id(folder_url))
-files <- drive_ls(folder) # ", n_max = 2" Only two rasters for testing purposes
+files <- drive_ls(folder)
 plan(sequential)
 plan(multisession(workers = 8))
 dl<-function(files){
@@ -435,10 +425,10 @@ result<-rbind(r050,r100,r150,r200)
 
 rm(r050,r100,r150,r200)
 
-# Calculating net flood levels by OLU protection and SLR scenario across OLUs
-# Base flood levels (1 non-protection scenario x 30 OLUs x 4 SLR scenarios)
+# Calculating net damage by OLU protection and SLR scenario across OLUs
+# Base damage (1 non-protection scenario x 30 OLUs x 4 SLR scenarios)
 base<-result[which(result$scen == "olu_00000.0.0.000.000000.00000.00.00000.00_depth"), ]
-# Flood levels for 30 protection scenarios across 30 OLUs by 4 SLR scenarios
+# Damage for 30 protection scenarios across 30 OLUs by 4 SLR scenarios
 change<-result[which(result$scen != "olu_00000.0.0.000.000000.00000.00.00000.00_depth"), ]
 # Merge on SLR scenario and OLU
 tresult<-merge(change, base, c("SLR","Name"))
@@ -519,7 +509,7 @@ tresult$Name<-ifelse(tresult$Name == "Corte Madera",2,tresult$Name)
 tresult$Name<-ifelse(tresult$Name == "Richardson",1,tresult$Name)
 tresult$Name<-as.numeric(tresult$Name)
 
-write.csv(tresult,"tresult.csv")
+write.csv(tresult,"tresult.csv", row.names = FALSE)
 
 ## Postprocessing flood results --------------------------------------------
 # Appending SLR info
@@ -628,5 +618,5 @@ fresult$OLU<-ifelse(fresult$OLU == "Corte Madera",2,fresult$OLU)
 fresult$OLU<-ifelse(fresult$OLU == "Richardson",1,fresult$OLU)
 fresult$OLU<-as.numeric(fresult$OLU)
 
-write.csv(fresult,"fresult.csv")
+write.csv(fresult,"fresult.csv", row.names = FALSE)
 
