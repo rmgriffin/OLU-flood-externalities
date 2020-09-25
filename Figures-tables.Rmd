@@ -256,9 +256,8 @@ kable(OLUclass, caption = "Mean external damage from protection, by OLU geomorph
 knitr::include_graphics("./Data/NLCD_Colour_Classification_Update.jpg")
 ```
 
-**Landcover within geomorphic types**
-
-```{r, echo = FALSE, fig.align="center"}
+**Landcover within geomorphic types - match color of letters to fill**
+```{r `Tukey boxplot`, echo=FALSE, fig.align="center"}
 lc<-df
 lc$X2<-lc$X21+lc$X22+lc$X23+lc$X24
 lc$X4<-lc$X41+lc$X42+lc$X43
@@ -278,12 +277,8 @@ lc<-lc %>%
   group_by(Name) %>%
   mutate(Ptg = area/sum(area))
 
-# Boxplot by total area
-ggplot(lc, aes(y=landcover,x=area,fill=Geomorphic))+
-  geom_boxplot() +
-  theme_minimal() +
-  labs(y = "NLCD Land Cover Class", x = "Area (km2)", fill = "OLU Geomorphic Type") +
-  scale_y_discrete(labels=c("X11" = "Open Water", 
+# Recoding landcover variables
+lc<-mutate(lc, landcover = recode(landcover, "X11" = "Open Water", 
                               "X2" = "Development",
                               "X31" = "Barren",
                               "X4" = "Forest",
@@ -292,25 +287,45 @@ ggplot(lc, aes(y=landcover,x=area,fill=Geomorphic))+
                               "X8" = "Pasture/Crops",
                               "X9" = "Wetlands"))
 
-# # Boxplot by percent area
-# ggplot(lc, aes(x=landcover,y=Ptg,fill=Geomorphic))+
-#   geom_boxplot() +
-#   theme_minimal()
 
-# Tukey test for wetlands (area)
-amod<-aov(area~Geomorphic,data=lc,subset=landcover=="X9") # change this for relevant comparison
-#plot(amod) 
-TukeyHSD(amod)
+## Boxplot code roughly follows https://stackoverflow.com/questions/53038671/tukey-test-results-on-geom-boxplot-with-facet-grid
+# Boxplot by total area
+b<-ggplot(lc, aes(y=Geomorphic,x=area,fill=Geomorphic)) +
+  geom_boxplot(outlier.shape = NA) +
+  facet_grid(rows = vars(landcover)) +
+  theme_minimal() +
+  theme(axis.text.y=element_blank(), strip.text.y = element_text(angle = 0)) +
+  labs(y = "NLCD Land Cover Class", x = "Area (km2)", fill = "OLU Geomorphic Type")
 
-# Tukey test for grasslands (area)
-amod<-aov(area~Geomorphic,data=lc,subset=landcover=="X71") # change this for relevant comparison
-#plot(amod)
-TukeyHSD(amod)
+generate_label_df <- function(TUKEY, variable){
 
-# Tukey test for agricultural (area)
-amod<-aov(area~Geomorphic,data=lc,subset=landcover=="X8") # change this for relevant comparison
-#plot(amod) 
-TukeyHSD(amod)
+  # Extract labels and factor levels from Tukey post-hoc 
+  Tukey.levels <- variable[,4]
+  Tukey.labels <- data.frame(multcompLetters(Tukey.levels)['Letters'])
+
+  #I need to put the labels in the same order as in the boxplot :
+  Tukey.labels$treatment=rownames(Tukey.labels)
+  Tukey.labels=Tukey.labels[order(Tukey.labels$treatment) , ]
+  return(Tukey.labels)
+}
+
+for (l in as.character(unique(lc$landcover))) {   
+  subdf <- subset(lc, landcover==l)
+  model=lm(area ~ Geomorphic, data=subdf)
+  ANOVA=aov(model)
+  TUKEY <- TukeyHSD(ANOVA)
+  labels <- generate_label_df(TUKEY , TUKEY$`Geomorphic`)
+  names(labels) <- c('Letters','Geomorphic')
+  yvalue <- aggregate(subdf$area, list(unique.values = subdf$Geomorphic), median)  
+  yvalue$x<--5 # overwriting prior line
+  final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
+  final$landcover <- l
+
+b<-b+geom_text(data = final,  aes(x=x, y=Geomorphic, label=Letters, color=Geomorphic), angle = 0, show.legend = FALSE)
+  
+}
+
+b
 ```
 
 
@@ -753,3 +768,6 @@ TukeyHSD(amod)
 #unlink("./Data", recursive = TRUE) # Delete Tempdata directory
 
 ```
+
+
+
