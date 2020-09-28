@@ -11,7 +11,7 @@ rm(list=ls()) # Clears workspace
 knitr::opts_chunk$set(echo = TRUE)
 
 # Packages
-PKG <- c("multcomp","multcompView","tidyverse","scales","gridExtra","ggthemes","viridis","knitr","sf","exactextractr","raster","data.table","sf", "RColorBrewer","tmap") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
+PKG <- c("multcomp","multcompView","tidyverse","scales","gridExtra","ggthemes","viridis","knitr","sf","exactextractr","raster","data.table","sf", "RColorBrewer","tmap", "ggpubr") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
 
 for (p in PKG) {
   if(!require(p,character.only = TRUE)) {  
@@ -665,10 +665,10 @@ cols<-getPalette(5)
 bbox_new<-st_bbox(OLU2526)
 xrange <- bbox_new$xmax - bbox_new$xmin
 yrange <- bbox_new$ymax - bbox_new$ymin
-  bbox_new[1] <- bbox_new[1] + (0.25 * xrange) # xmin - left
-  bbox_new[3] <- bbox_new[3] - (0.35 * xrange) # xmax - right
-  bbox_new[2] <- bbox_new[2] + (0.40 * yrange) # ymin - bottom
-  bbox_new[4] <- bbox_new[4] - (0.10 * yrange) # ymax - top
+  bbox_new[1] <- bbox_new[1] + (0.25 * xrange) # xmin - left +.25
+  bbox_new[3] <- bbox_new[3] - (0.35 * xrange) # xmax - right -.35
+  bbox_new[2] <- bbox_new[2] + (0.40 * yrange) # ymin - bottom +.4
+  bbox_new[4] <- bbox_new[4] - (0.10 * yrange) # ymax - top -.1
 bbox_new <- bbox_new %>%  # take the bounding box ...
   st_as_sfc() # ... and make it a sf polygon
 
@@ -724,7 +724,7 @@ tmap_save(OLU2526f,"OLU2526f.eps") # https://rdrr.io/cran/tmap/man/tmap_save.htm
 ```{r, include=FALSE}
 ## Preparing data for statistical tests of boxplot figure 
 
-# Flood Data
+## Damage data
 stst<-cf
 stst<-subset(stst, select = c(Name,OLUid,i.dmg.050,i.dmg.100,i.dmg.150,i.dmg.200,e.dmg.050,e.dmg.100,e.dmg.150,e.dmg.200))
 stst$n.dmg.050<-stst$i.dmg.050+stst$e.dmg.050
@@ -733,9 +733,12 @@ stst$n.dmg.150<-stst$i.dmg.150+stst$e.dmg.150
 stst$n.dmg.200<-stst$i.dmg.200+stst$e.dmg.200
 # Merge with type
 stst<-left_join(stst, gt, by='Name')
+# Wide to long on SLR
+colnames(stst)<-c("Name","OLUid","idmg.050","idmg.100","idmg.150","idmg.200","edmg.050","edmg.100","edmg.150","edmg.200","ndmg.050","ndmg.100","ndmg.150","ndmg.200","Geomorphic","geom","area")
+stst<-pivot_longer(stst,cols = ends_with(c("050","100","150","200")), names_to = c("Type", "SLR"), names_sep = "\\.", values_to = "Damage")
+stst$Type<-ifelse(stst$Type=="idmg","internal", ifelse(stst$Type=="edmg","external","net"))
 
-# Adapt the below for flood data
-
+## Flood data
 # Internal change in damage and census blocks impacted by OLU
 bf.i<-fresult[which(fresult$OLU==fresult$scen.x),]
 bf.i<-bf.i %>%
@@ -753,21 +756,183 @@ bf<-left_join(Exp, bf.i, by='scen.x') %>%
                 left_join(., gt, by='Name')
 
 
-colnames(bf)<-c("Name","numCB","sumtrv","OLUid","i.area.100","i.area.150","i.area.200", "i.area.050","i.vol.100","i.vol.150","i.vol.200", "i.vol.050","e.area.100","e.area.150","e.area.200", "e.area.050","e.vol.100","e.vol.150","e.vol.200", "e.vol.050", "Geomorphic")
+colnames(bf)<-c("Name","numCB","sumtrv","OLUid","iarea.100","iarea.150","iarea.200", "iarea.050","ivol.100","ivol.150","ivol.200","ivol.050","earea.100","earea.150","earea.200", "earea.050","evol.100","evol.150","evol.200","evol.050","Geomorphic","geom","area")
 
-bf$n.vol.050<-bf$i.vol.050+bf$e.vol.050
-bf$n.vol.100<-bf$i.vol.100+bf$e.vol.100
-bf$n.vol.150<-bf$i.vol.150+bf$e.vol.150
-bf$n.vol.200<-bf$i.vol.200+bf$e.vol.200
+bf$nvol.050<-bf$ivol.050+bf$evol.050
+bf$nvol.100<-bf$ivol.100+bf$evol.100
+bf$nvol.150<-bf$ivol.150+bf$evol.150
+bf$nvol.200<-bf$ivol.200+bf$evol.200
 
-# Tukey test
-amod<-aov(n.dmg.200~Geomorphic,data=stst) # change this for relevant comparison
-#plot(amod) 
-TukeyHSD(amod)
+bf<-subset(bf, select = -c(iarea.100,iarea.150,iarea.200,iarea.050,earea.100,earea.150,earea.200,earea.050))
+bf$Name<-NULL
 
-#unlink("./Data", recursive = TRUE) # Delete Tempdata directory
+bf<-pivot_longer(bf,cols = ends_with(c("050","100","150","200")), names_to = c("Type", "SLR"), names_sep = "\\.", values_to = "Volume")
+bf$Type<-ifelse(bf$Type=="ivol","internal", ifelse(bf$Type=="evol","external","net"))
+
+bf<-subset(bf, select = c(OLUid, Type, SLR, Volume))
+
+# Joining damage and flood data
+stst<-left_join(stst,bf,by=c("OLUid", "Type", "SLR"))
+stst$Damage<-stst$Damage/1000000
+stst$Volume<-stst$Volume/1000000
+```
+
+```{r `Tukey boxplot 2`, echo=FALSE, fig.align="center"}
+
+d_i<-ggplot(stst[stst$Type=="internal",], aes(x=Geomorphic,y=Damage,fill=Geomorphic)) +
+  geom_boxplot(outlier.shape = NA) +
+  facet_grid(cols = vars(SLR)) +
+  theme_minimal() +
+  coord_cartesian(ylim=c(-4000, 1500)) +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal") 
+  #labs(y = "Damage", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+
+for (l in as.character(unique(stst$SLR))) {   
+  subdf <- subset(stst[stst$Type=="internal",], SLR==l)
+  model=lm(Damage ~ Geomorphic, data=subdf)
+  ANOVA=aov(model)
+  TUKEY <- TukeyHSD(ANOVA)
+  labels <- generate_label_df(TUKEY , TUKEY$`Geomorphic`)
+  names(labels) <- c('Letters','Geomorphic')
+  yvalue <- aggregate(subdf$Damage, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
+  #yvalue$x<-500 # overwriting prior line
+  final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
+  final$SLR <- l
+
+d_i<-d_i+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
+  
+}
+
+d_e<-ggplot(stst[stst$Type=="external",], aes(x=Geomorphic,y=Damage,fill=Geomorphic)) +
+  geom_boxplot(outlier.shape = NA) +
+  facet_grid(cols = vars(SLR)) +
+  theme_minimal() +
+  coord_cartesian(ylim=c(-250, 750)) +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+  #labs(y = "Damage", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+
+for (l in as.character(unique(stst$SLR))) {   
+  subdf <- subset(stst[stst$Type=="external",], SLR==l)
+  model=lm(Damage ~ Geomorphic, data=subdf)
+  ANOVA=aov(model)
+  TUKEY <- TukeyHSD(ANOVA)
+  labels <- generate_label_df(TUKEY , TUKEY$`Geomorphic`)
+  names(labels) <- c('Letters','Geomorphic')
+  yvalue <- aggregate(subdf$Damage, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
+  #yvalue$x<-500 # overwriting prior line
+  final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
+  final$SLR <- l
+
+d_e<-d_e+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
+  
+}
+
+d_n<-ggplot(stst[stst$Type=="net",], aes(x=Geomorphic,y=Damage,fill=Geomorphic)) +
+  geom_boxplot(outlier.shape = NA) +
+  facet_grid(cols = vars(SLR)) +
+  theme_minimal() +
+  coord_cartesian(ylim=c(-4000, 1500)) +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+  #labs(y = "Damage", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+
+for (l in as.character(unique(stst$SLR))) {   
+  subdf <- subset(stst[stst$Type=="net",], SLR==l)
+  model=lm(Damage ~ Geomorphic, data=subdf)
+  ANOVA=aov(model)
+  TUKEY <- TukeyHSD(ANOVA)
+  labels <- generate_label_df(TUKEY , TUKEY$`Geomorphic`)
+  names(labels) <- c('Letters','Geomorphic')
+  yvalue <- aggregate(subdf$Damage, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
+  #yvalue$x<-500 # overwriting prior line
+  final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
+  final$SLR <- l
+
+d_n<-d_n+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
+}
+
+v_i<-ggplot(stst[stst$Type=="internal",], aes(x=Geomorphic,y=Volume,fill=Geomorphic)) +
+  geom_boxplot(outlier.shape = NA) +
+  facet_grid(cols = vars(SLR)) +
+  theme_minimal() +
+  coord_cartesian(ylim=c(-600, 250)) +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+  #labs(y = "Volume", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+
+for (l in as.character(unique(stst$SLR))) {   
+  subdf <- subset(stst[stst$Type=="internal",], SLR==l)
+  model=lm(Volume ~ Geomorphic, data=subdf)
+  ANOVA=aov(model)
+  TUKEY <- TukeyHSD(ANOVA)
+  labels <- generate_label_df(TUKEY , TUKEY$`Geomorphic`)
+  names(labels) <- c('Letters','Geomorphic')
+  yvalue <- aggregate(subdf$Volume, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
+  #yvalue$x<-500 # overwriting prior line
+  final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
+  final$SLR <- l
+
+v_i<-v_i+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.5, hjust=-0.1, show.legend = FALSE)
+  
+}
+
+v_e<-ggplot(stst[stst$Type=="external",], aes(x=Geomorphic,y=Volume,fill=Geomorphic)) +
+  geom_boxplot(outlier.shape = NA) +
+  facet_grid(cols = vars(SLR)) +
+  theme_minimal() +
+  coord_cartesian(ylim=c(-10, 25)) +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(),legend.box = "horizontal") 
+  #labs(y = "Volume", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+
+for (l in as.character(unique(stst$SLR))) {   
+  subdf <- subset(stst[stst$Type=="external",], SLR==l)
+  model=lm(Volume ~ Geomorphic, data=subdf)
+  ANOVA=aov(model)
+  TUKEY <- TukeyHSD(ANOVA)
+  labels <- generate_label_df(TUKEY , TUKEY$`Geomorphic`)
+  names(labels) <- c('Letters','Geomorphic')
+  yvalue <- aggregate(subdf$Volume, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
+  #yvalue$x<-500 # overwriting prior line
+  final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
+  final$SLR <- l
+
+v_e<-v_e+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
+  
+}
+
+v_n<-ggplot(stst[stst$Type=="net",], aes(x=Geomorphic,y=Volume,fill=Geomorphic)) +
+  geom_boxplot(outlier.shape = NA) +
+  facet_grid(cols = vars(SLR)) +
+  theme_minimal() +
+  coord_cartesian(ylim=c(-600, 250)) +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+  #labs(y = "Volume", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+
+for (l in as.character(unique(stst$SLR))) {   
+  subdf <- subset(stst[stst$Type=="net",], SLR==l)
+  model=lm(Volume ~ Geomorphic, data=subdf)
+  ANOVA=aov(model)
+  TUKEY <- TukeyHSD(ANOVA)
+  labels <- generate_label_df(TUKEY , TUKEY$`Geomorphic`)
+  names(labels) <- c('Letters','Geomorphic')
+  yvalue <- aggregate(subdf$Volume, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
+  #yvalue$x<-500 # overwriting prior line
+  final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
+  final$SLR <- l
+
+v_n<-v_n+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
+
+}
+
+z<-ggarrange(v_i,d_i,v_e,d_e,v_n,d_n, ncol = 2, nrow = 3, label.x = 0.05, label.y = 0.2, common.legend = TRUE)
+
 
 ```
 
+```{r}
+library(patchwork)
+# Column and row titles using patchwork https://stackoverflow.com/questions/60347583/add-row-and-column-titles-with-ggarrange
 
+v_i + d_i + v_e + d_e + v_n + d_n + plot_layout(guides = "collect", ncol = 2) & theme(legend.position = 'bottom')
+
+
+```
 
