@@ -57,8 +57,10 @@ ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) +
   facet_wrap(vars(SLR)) +
   coord_equal() +
   theme_minimal() +
-  labs(title = "Alt. 1 - More classes", x = "OLU Protection Scenario", y = "OLU") +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot 
+
+ggsave(file="Damage.eps")
 
 ```
 
@@ -81,7 +83,7 @@ ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) +
   facet_wrap(vars(SLR)) +
   coord_equal() +
   theme_minimal() +
-  labs(title = "Alt. 2 - Fewer classes", x = "OLU Protection Scenario", y = "OLU") +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot
 ```
 
@@ -94,7 +96,7 @@ ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) +
   facet_wrap(vars(SLR)) +
   coord_equal() +
   theme_minimal() +
-  labs(title = "Alt. 3 - Fewer classes, line dividing south and north bay (black dashed)", x = "OLU Protection Scenario", y = "OLU") +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot
 ```
 
@@ -325,6 +327,8 @@ b<-b+geom_text(data = final,  aes(x=x, y=Geomorphic, label=Letters, color=Geomor
   
 }
 
+ggsave(file="Landcover.eps")
+
 b
 ```
 
@@ -513,7 +517,10 @@ TukeyHSD(amod)
 ```
 
 ```{r, echo = FALSE, fig.align="center"}
-kable(cf2, caption = "Baywide net damage and net impacted census blocks from protection, across SLR scenarios. Net = internal + external", digits = 1, format.args = list(big.mark = ","))
+kable(within(cf2,rm(geom)), caption = "Baywide net damage and net impacted census blocks from protection, across SLR scenarios. Net = internal + external", digits = 1, format.args = list(big.mark = ","))
+cf2$area<-round(cf2$area, 1)
+cf2$trvkm2<-round(cf2$trvkm2, 1)
+kable(within(cf2,rm(geom)),format = "latex")
 ```
 
 *sumrtv = total replacement value of structures*, *numCB = total # of census blocks*, 
@@ -539,7 +546,7 @@ ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.area)) +
   facet_wrap(vars(SLR)) +
   coord_equal() +
   theme_minimal() +
-  labs(title = "Alt. 1 - Area (Square Meters)", x = "OLU Protection Scenario", y = "OLU") +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) 
 
 ```
@@ -557,7 +564,7 @@ ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) +
   facet_wrap(vars(SLR)) +
   coord_equal() +
   theme_minimal() +
-  labs(title = "Alt. 2 - Volume (Cubic Meters)", x = "OLU Protection Scenario", y = "OLU") +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) 
 ```
 
@@ -574,8 +581,9 @@ ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) +
   facet_wrap(vars(SLR)) +
   coord_equal() +
   theme_minimal() +
-  labs(title = "Alt. 3 - Fewer classes, volume", x = "OLU Protection Scenario", y = "OLU") +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) 
+ggsave(file="Volume.eps")
 ```
 
 ```{r, echo=FALSE, fig.align="center"}
@@ -588,7 +596,7 @@ ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) +
   facet_wrap(vars(SLR)) +
   coord_equal() +
   theme_minimal() +
-  labs(title = "Alt. 4 - Lines, volume", x = "OLU Protection Scenario", y = "OLU") +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) 
 #ggsave(file="name.eps")
 ```
@@ -607,7 +615,7 @@ ggplot(OLU) +
   labs(fill="Population")
 ```
 
-## Figure options for Highway 37 example
+## Figure - Highway 37 example
 ```{r, include=FALSE, echo=FALSE}
 H37<-st_read("./Data/Roads_2015.gpkg")
 H37<-filter(H37, FULLNAME %in% c("State Rte 37")) # Leaves out "State Hwy 37" to focus more on OLU7
@@ -645,7 +653,7 @@ OLU7f
 tmap_save(OLU7f,"OLU7f.eps") # https://rdrr.io/cran/tmap/man/tmap_save.html
 ```
 
-## Figure options for OLUs 25 and 26
+## Figure - OLUs 25 and 26
 
 ```{r, echo=FALSE, fig.align="center"}
 # Flood maps are in meters
@@ -983,9 +991,12 @@ iiikjjj
 
 plotlist <- list(a = row1, b = row2, c = col1, d = col2, e=v_i, f=d_i, g=v_e, h=d_e, i=v_n, j=d_n, k=row3)
 
-wrap_plots(plotlist, guides = 'collect', design = layoutplot) & theme(legend.position = 'bottom') 
+y<-wrap_plots(plotlist, guides = 'collect', design = layoutplot) & theme(legend.position = 'bottom') 
 #v_i + d_i + v_e + d_e + v_n + d_n + plot_layout(guides = "collect", ncol = 2) & theme(legend.position = 'bottom')
 
+ggsave("Boxplot.eps")
+
+y
 
 ```
 
