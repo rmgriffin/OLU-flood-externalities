@@ -652,6 +652,8 @@ tmap_save(OLU7f,"OLU7f.eps") # https://rdrr.io/cran/tmap/man/tmap_save.html
 SLR50<-raster("./Data/50/olu_00000-0-0-000-000000-00000-00-00000-00_depth.tif")
 SLR50.26<-raster("./Data/50/olu_00000-0-0-000-000000-00000-00-00100-00_depth.tif")
 SLR100.26<-raster("./Data/100/olu_00000-0-0-000-000000-00000-00-00100-00_depth.tif")
+SLR150<-raster("./Data/150/olu_00000-0-0-000-000000-00000-00-00000-00_depth.tif")
+SLR150.26<-raster("./Data/150/olu_00000-0-0-000-000000-00000-00-00100-00_depth.tif")  
 
 OLU2526<-filter(OLU, OLU_ID %in% c("25","26")) # http://zevross.com/blog/2018/10/02/creating-beautiful-demographic-maps-in-r-with-the-tidycensus-and-tmap-packages/
 OLU26<-filter(OLU, OLU_ID %in% c("26"))
@@ -666,7 +668,7 @@ bbox_new<-st_bbox(OLU2526)
 xrange <- bbox_new$xmax - bbox_new$xmin
 yrange <- bbox_new$ymax - bbox_new$ymin
   bbox_new[1] <- bbox_new[1] + (0.25 * xrange) # xmin - left +.25
-  bbox_new[3] <- bbox_new[3] - (0.35 * xrange) # xmax - right -.35
+  bbox_new[3] <- bbox_new[3] - (0.62 * xrange) # xmax - right -.62
   bbox_new[2] <- bbox_new[2] + (0.40 * yrange) # ymin - bottom +.4
   bbox_new[4] <- bbox_new[4] - (0.10 * yrange) # ymax - top -.1
 bbox_new <- bbox_new %>%  # take the bounding box ...
@@ -699,7 +701,7 @@ m50.26<-tm_shape(SLR50.26, bbox=bbox_new) +
   tm_layout(frame = TRUE, legend.show = FALSE) +
   #tm_scale_bar() +
   tm_shape(OLU26) +
-  tm_borders(col = "black", lwd = 1.25) +
+  tm_polygons(col="white", border.col = "black", lwd = 1.25) +
   tm_legend(legend.position = c("left", "bottom"))
 
 m100.26<-tm_shape(SLR100.26, bbox=bbox_new) +
@@ -709,10 +711,30 @@ m100.26<-tm_shape(SLR100.26, bbox=bbox_new) +
   tm_layout(frame = TRUE, legend.show = FALSE) +
   #tm_scale_bar() +
   tm_shape(OLU26) +
-  tm_borders(col = "black", lwd = 1.25) +
+  tm_polygons(col="white", border.col = "black", lwd = 1.25) +
   tm_legend(legend.position = c("left", "bottom"))
 
-OLU2526f<-tmap_arrange(m50,m100,m50.26,m100.26,ncol = 2)
+m150<-tm_shape(SLR150, bbox=bbox_new) +
+  tm_raster(style = "fixed", breaks=seq(0, 5, by=1), labels = c("<1","1 - 2","2 - 3","3 - 4",">4"), palette = cols, title = "Water Depth (m)",colorNA = "white",textNA = "") +
+  tm_shape(OLU) +
+  tm_borders(col = "grey") +
+  tm_layout(frame = TRUE, legend.show = FALSE) +
+  #tm_scale_bar() +
+  #tm_shape(OLU26) +
+  #tm_borders(col = "black", lwd = 1.25) +
+  tm_legend(legend.position = c("left", "bottom"))
+
+m150.26<-tm_shape(SLR150.26, bbox=bbox_new) +
+  tm_raster(style = "fixed", breaks=seq(0, 5, by=1), labels = c("<1","1 - 2","2 - 3","3 - 4",">4"), palette = cols, title = "Water Depth (m)",colorNA = "white",textNA = "") +
+  tm_shape(OLU) +
+  tm_borders(col = "grey") +
+  tm_layout(frame = TRUE, legend.show = FALSE) +
+  #tm_scale_bar() +
+  tm_shape(OLU26) +
+  tm_polygons(col="white", border.col = "black", lwd = 1.25) +
+  tm_legend(legend.position = c("left", "bottom"))
+
+OLU2526f<-tmap_arrange(m50,m100,m150,m50.26,m100.26,m150.26,ncol = 3)
 
 OLU2526f
 
@@ -721,7 +743,7 @@ tmap_save(OLU2526f,"OLU2526f.eps") # https://rdrr.io/cran/tmap/man/tmap_save.htm
 
 
 
-```{r, include=FALSE}
+```{r `boxplot data prep`, include=FALSE}
 ## Preparing data for statistical tests of boxplot figure 
 
 ## Damage data
@@ -778,7 +800,7 @@ stst$Volume<-stst$Volume/1000000
 
 ```
 
-```{r `Tukey boxplot 2`, echo=FALSE, fig.align="center"}
+```{r `Tukey boxplot figs prep`, echo=FALSE, fig.align="center"}
 # Recoding SLR variables https://stackoverflow.com/questions/43290483/r-changing-order-of-facets
 stst$SLR<-ifelse(stst$SLR=="050","50cm",
                  ifelse(stst$SLR=="100","100cm",
@@ -862,7 +884,7 @@ v_i<-ggplot(stst[stst$Type=="internal",], aes(x=Geomorphic,y=Volume,fill=Geomorp
   geom_boxplot(outlier.shape = NA) +
   facet_grid(.~SLR) +
   theme_minimal() +
-  coord_cartesian(ylim=c(-600, 250)) +
+  coord_cartesian(ylim=c(-600, 300)) +
   theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal") +
   labs(subtitle = "(a)")
 
@@ -910,7 +932,7 @@ v_n<-ggplot(stst[stst$Type=="net",], aes(x=Geomorphic,y=Volume,fill=Geomorphic))
   geom_boxplot(outlier.shape = NA) +
   facet_grid(.~SLR) +
   theme_minimal() +
-  coord_cartesian(ylim=c(-600, 250)) +
+  coord_cartesian(ylim=c(-600, 300)) +
   theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal") +
   labs(subtitle = "(e)")
 
@@ -935,7 +957,7 @@ z<-ggarrange(v_i,d_i,v_e,d_e,v_n,d_n, ncol = 2, nrow = 3, label.x = 0.05, label.
 
 ```
 
-```{r}
+```{r `Boxplot volume-damage`, echo=FALSE, fig.align="center", warning=FALSE}
 # Column and row titles using patchwork https://stackoverflow.com/questions/60347583/add-row-and-column-titles-with-ggarrange
 
 row1 <- ggplot() + annotate(geom = 'text', x=1, y=1, label="Internal", angle = 0) + theme_void() 
