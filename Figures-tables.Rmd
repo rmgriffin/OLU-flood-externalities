@@ -11,7 +11,7 @@ rm(list=ls()) # Clears workspace
 knitr::opts_chunk$set(echo = TRUE)
 
 # Packages
-PKG <- c("multcomp","multcompView","tidyverse","scales","gridExtra","ggthemes","viridis","knitr","sf","exactextractr","raster","data.table","sf", "RColorBrewer","tmap", "ggpubr") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
+PKG <- c("multcomp","multcompView","tidyverse","scales","gridExtra","ggthemes","viridis","knitr","sf","exactextractr","raster","data.table","sf", "RColorBrewer","tmap", "ggpubr", "patchwork") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
 
 for (p in PKG) {
   if(!require(p,character.only = TRUE)) {  
@@ -775,17 +775,25 @@ bf<-subset(bf, select = c(OLUid, Type, SLR, Volume))
 stst<-left_join(stst,bf,by=c("OLUid", "Type", "SLR"))
 stst$Damage<-stst$Damage/1000000
 stst$Volume<-stst$Volume/1000000
+
 ```
 
 ```{r `Tukey boxplot 2`, echo=FALSE, fig.align="center"}
+# Recoding SLR variables https://stackoverflow.com/questions/43290483/r-changing-order-of-facets
+stst$SLR<-ifelse(stst$SLR=="050","50cm",
+                 ifelse(stst$SLR=="100","100cm",
+                        ifelse(stst$SLR=="150","150cm","200cm")))
+stst$SLR<-as.factor(stst$SLR)
+stst$SLR<-factor(stst$SLR, levels = c('50cm','100cm','150cm','200cm'))
+
 
 d_i<-ggplot(stst[stst$Type=="internal",], aes(x=Geomorphic,y=Damage,fill=Geomorphic)) +
   geom_boxplot(outlier.shape = NA) +
-  facet_grid(cols = vars(SLR)) +
+  facet_grid(.~SLR) +
   theme_minimal() +
   coord_cartesian(ylim=c(-4000, 1500)) +
-  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal") 
-  #labs(y = "Damage", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal") +
+  labs(subtitle = "(b)")
 
 for (l in as.character(unique(stst$SLR))) {   
   subdf <- subset(stst[stst$Type=="internal",], SLR==l)
@@ -797,7 +805,7 @@ for (l in as.character(unique(stst$SLR))) {
   yvalue <- aggregate(subdf$Damage, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
   #yvalue$x<-500 # overwriting prior line
   final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
-  final$SLR <- l
+  final$SLR <- as.factor(l) # as.factor here is to make sure factor ordering set above is preserved
 
 d_i<-d_i+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
   
@@ -805,11 +813,11 @@ d_i<-d_i+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Ge
 
 d_e<-ggplot(stst[stst$Type=="external",], aes(x=Geomorphic,y=Damage,fill=Geomorphic)) +
   geom_boxplot(outlier.shape = NA) +
-  facet_grid(cols = vars(SLR)) +
+  facet_grid(.~SLR) +
   theme_minimal() +
   coord_cartesian(ylim=c(-250, 750)) +
-  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
-  #labs(y = "Damage", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal") +
+  labs(subtitle = "(d)")
 
 for (l in as.character(unique(stst$SLR))) {   
   subdf <- subset(stst[stst$Type=="external",], SLR==l)
@@ -821,7 +829,7 @@ for (l in as.character(unique(stst$SLR))) {
   yvalue <- aggregate(subdf$Damage, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
   #yvalue$x<-500 # overwriting prior line
   final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
-  final$SLR <- l
+  final$SLR <- as.factor(l)
 
 d_e<-d_e+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
   
@@ -829,11 +837,11 @@ d_e<-d_e+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Ge
 
 d_n<-ggplot(stst[stst$Type=="net",], aes(x=Geomorphic,y=Damage,fill=Geomorphic)) +
   geom_boxplot(outlier.shape = NA) +
-  facet_grid(cols = vars(SLR)) +
+  facet_grid(.~SLR) +
   theme_minimal() +
   coord_cartesian(ylim=c(-4000, 1500)) +
-  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
-  #labs(y = "Damage", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal") +
+  labs(subtitle = "(f)")
 
 for (l in as.character(unique(stst$SLR))) {   
   subdf <- subset(stst[stst$Type=="net",], SLR==l)
@@ -845,18 +853,18 @@ for (l in as.character(unique(stst$SLR))) {
   yvalue <- aggregate(subdf$Damage, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
   #yvalue$x<-500 # overwriting prior line
   final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
-  final$SLR <- l
+  final$SLR <- as.factor(l)
 
 d_n<-d_n+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
 }
 
 v_i<-ggplot(stst[stst$Type=="internal",], aes(x=Geomorphic,y=Volume,fill=Geomorphic)) +
   geom_boxplot(outlier.shape = NA) +
-  facet_grid(cols = vars(SLR)) +
+  facet_grid(.~SLR) +
   theme_minimal() +
   coord_cartesian(ylim=c(-600, 250)) +
-  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
-  #labs(y = "Volume", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal") +
+  labs(subtitle = "(a)")
 
 for (l in as.character(unique(stst$SLR))) {   
   subdf <- subset(stst[stst$Type=="internal",], SLR==l)
@@ -868,7 +876,7 @@ for (l in as.character(unique(stst$SLR))) {
   yvalue <- aggregate(subdf$Volume, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
   #yvalue$x<-500 # overwriting prior line
   final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
-  final$SLR <- l
+  final$SLR <- as.factor(l)
 
 v_i<-v_i+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.5, hjust=-0.1, show.legend = FALSE)
   
@@ -876,11 +884,11 @@ v_i<-v_i+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Ge
 
 v_e<-ggplot(stst[stst$Type=="external",], aes(x=Geomorphic,y=Volume,fill=Geomorphic)) +
   geom_boxplot(outlier.shape = NA) +
-  facet_grid(cols = vars(SLR)) +
+  facet_grid(.~SLR) +
   theme_minimal() +
   coord_cartesian(ylim=c(-10, 25)) +
-  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(),legend.box = "horizontal") 
-  #labs(y = "Volume", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(),legend.box = "horizontal") +
+  labs(subtitle = "(c)")
 
 for (l in as.character(unique(stst$SLR))) {   
   subdf <- subset(stst[stst$Type=="external",], SLR==l)
@@ -892,7 +900,7 @@ for (l in as.character(unique(stst$SLR))) {
   yvalue <- aggregate(subdf$Volume, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
   #yvalue$x<-500 # overwriting prior line
   final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
-  final$SLR <- l
+  final$SLR <- as.factor(l)
 
 v_e<-v_e+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
   
@@ -900,11 +908,11 @@ v_e<-v_e+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Ge
 
 v_n<-ggplot(stst[stst$Type=="net",], aes(x=Geomorphic,y=Volume,fill=Geomorphic)) +
   geom_boxplot(outlier.shape = NA) +
-  facet_grid(cols = vars(SLR)) +
+  facet_grid(.~SLR) +
   theme_minimal() +
   coord_cartesian(ylim=c(-600, 250)) +
-  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
-  #labs(y = "Volume", x = "Geomorphic Type", fill = "OLU Geomorphic Type")
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), axis.title.y = element_blank(), legend.title = element_blank(), legend.box = "horizontal") +
+  labs(subtitle = "(e)")
 
 for (l in as.character(unique(stst$SLR))) {   
   subdf <- subset(stst[stst$Type=="net",], SLR==l)
@@ -916,7 +924,7 @@ for (l in as.character(unique(stst$SLR))) {
   yvalue <- aggregate(subdf$Volume, list(unique.values = subdf$Geomorphic), quantile, probs=.75)  
   #yvalue$x<-500 # overwriting prior line
   final <- merge(labels, yvalue, by.x = "Geomorphic", by.y = "unique.values")
-  final$SLR <- l
+  final$SLR <- as.factor(l)
 
 v_n<-v_n+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Geomorphic), vjust=-1.0, hjust=-0.1, show.legend = FALSE)
 
@@ -928,10 +936,33 @@ z<-ggarrange(v_i,d_i,v_e,d_e,v_n,d_n, ncol = 2, nrow = 3, label.x = 0.05, label.
 ```
 
 ```{r}
-library(patchwork)
 # Column and row titles using patchwork https://stackoverflow.com/questions/60347583/add-row-and-column-titles-with-ggarrange
 
-v_i + d_i + v_e + d_e + v_n + d_n + plot_layout(guides = "collect", ncol = 2) & theme(legend.position = 'bottom')
+row1 <- ggplot() + annotate(geom = 'text', x=1, y=1, label="Internal", angle = 0) + theme_void() 
+
+row2 <- ggplot() + annotate(geom = 'text', x=1, y=1, label="External", angle = 0) + theme_void() 
+
+row3 <- ggplot() + annotate(geom = 'text', x=1, y=1, label="Net", angle = 0) + theme_void()
+
+col1 <- ggplot() + annotate(geom = 'text', x=1, y=1, label=expression(paste("Volume (Millions ", "m"^"3",")"))) + theme_void() 
+
+col2 <- ggplot() + annotate(geom = 'text', x=1, y=1, label="Damage (USD millions)") + theme_void() 
+
+layoutplot <- "
+ccc#ddd
+eeeafff
+eeeafff
+gggbhhh
+gggbhhh
+iiikjjj
+iiikjjj
+"
+
+
+plotlist <- list(a = row1, b = row2, c = col1, d = col2, e=v_i, f=d_i, g=v_e, h=d_e, i=v_n, j=d_n, k=row3)
+
+wrap_plots(plotlist, guides = 'collect', design = layoutplot) & theme(legend.position = 'bottom') 
+#v_i + d_i + v_e + d_e + v_n + d_n + plot_layout(guides = "collect", ncol = 2) & theme(legend.position = 'bottom')
 
 
 ```
