@@ -60,7 +60,7 @@ ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) +
   labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot 
 
-ggsave(file="Damage.eps")
+#ggsave(file="Damage.eps")
 
 ```
 
@@ -88,16 +88,168 @@ ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) +
 ```
 
 ```{r, echo=FALSE}
+# To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
+getPalette<-colorRampPalette(brewer.pal(9, "RdBu")) # function, change if different palette is desired
+cols<-getPalette(9) # Needs to be odd number to ensure midpoint color is correct
+#cols<-cols[3:14] # Asymmetric diverging palette
+#show_col(cols)
+colscale<-c(10^12,10^9,10^6,10^3,0,-10^3,-10^6,-10^9,-10^12)
+labs<-expression(paste("10"^"12"),paste("10"^"9"),paste("10"^"6"),paste("10"^"3"),0,paste("-10"^"3"),paste("-10"^"6"),paste("-10"^"9"),paste("-10"^"12"))
+#colscale<-unname(quantile(tresult.ni$net.damage, probs = seq(0, 1, 1/4)))
+#colscale<-c(min(tresult$net.damage), min(tresult$net.damage)/2, min(tresult$net.damage)/4, min(tresult$net.damage)/8, 0, max(tresult$net.damage)/8, max(tresult$net.damage)/4, max(tresult$net.damage)/2, max(tresult$net.damage))
+
+# Changing small values to white
+cols[4]<-cols[6]<-"#F7F7F7"
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+
 ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) + 
   geom_tile() + 
-  geom_hline(yintercept=17.5, linetype="dashed", color = "black") +
-  geom_vline(xintercept=17.5, linetype="dashed", color = "black") +
   scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Damage ($)", guide=guide_legend(), limits = c(-10^12,10^12)) + # labels = scales::trans_format("log10", scales::math_format(10^.x)) <== doesn't work with negative logs
   facet_wrap(vars(SLR)) +
   coord_equal() +
   theme_minimal() +
   labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot
+```
+
+```{r, echo=FALSE}
+# To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
+getPalette<-colorRampPalette(brewer.pal(25, "RdBu")) # function, change if different palette is desired
+cols<-getPalette(25) # Needs to be odd number to ensure midpoint color is correct
+#cols<-cols[3:14] # Asymmetric diverging palette
+#show_col(cols)
+colscale<-c(10^12,10^11,10^10,10^9,10^8,10^7,10^6,10^5,10^4,10^3,10^2,10,0,-10,-10^2,-10^3,-10^4,-10^5,-10^6,-10^7,-10^8,-10^9,-10^10,-10^11,-10^12)
+labs<-expression(paste("10"^"12"),"",paste("10"^"10"),"",paste("10"^"8"),"",paste("10"^"6"),"",paste("10"^"4"),"",paste("10"^"2"),"",0,"",paste("-10"^"2"),"",paste("-10"^"4"),"",paste("-10"^"6"),"",paste("-10"^"8"),"",paste("-10"^"10"),"",paste("-10"^"12"))
+#colscale<-unname(quantile(tresult.ni$net.damage, probs = seq(0, 1, 1/4)))
+#colscale<-c(min(tresult$net.damage), min(tresult$net.damage)/2, min(tresult$net.damage)/4, min(tresult$net.damage)/8, 0, max(tresult$net.damage)/8, max(tresult$net.damage)/4, max(tresult$net.damage)/2, max(tresult$net.damage))
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+
+ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) + 
+  geom_tile() + 
+  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Damage ($)", guide=guide_legend(), limits = c(-10^12,10^12)) + # labels = scales::trans_format("log10", scales::math_format(10^.x)) <== doesn't work with negative logs
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot
+```
+```{r, echo=FALSE}
+# To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
+getPalette<-colorRampPalette(brewer.pal(26, "RdBu")) # function, change if different palette is desired
+cols<-getPalette(26) # Needs to be odd number to ensure midpoint color is correct
+#cols<-cols[3:14] # Asymmetric diverging palette
+#show_col(cols)
+labs<-expression(paste("10"^"12"),"",paste("10"^"10"),"",paste("10"^"8"),"",paste("10"^"6"),"",paste("10"^"4"),"",paste("10"^"2"),"",0,"",paste("-10"^"2"),"",paste("-10"^"4"),"",paste("-10"^"6"),"",paste("-10"^"8"),"",paste("-10"^"10"),"",paste("-10"^"12"))
+#colscale<-unname(quantile(tresult.ni$net.damage, probs = seq(0, 1, 1/4)))
+#colscale<-c(min(tresult$net.damage), min(tresult$net.damage)/2, min(tresult$net.damage)/4, min(tresult$net.damage)/8, 0, max(tresult$net.damage)/8, max(tresult$net.damage)/4, max(tresult$net.damage)/2, max(tresult$net.damage))
+
+# # Set small values to white
+# cols[6:12]<-cols[14:20]<-"#F7F7F7"
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+
+# Damage as a factor
+tresult$net.damage_f<-cut(tresult$net.damage,
+                      breaks = c(+Inf,10^12,10^11,10^10,10^9,10^8,10^7,10^6,10^5,10^4,10^3,10^2,10,0,-10,-10^2,-10^3,-10^4,-10^5,-10^6,-10^7,-10^8,-10^9,-10^10,-10^11,-10^12,-Inf))
+
+# Below based on advice:
+# https://stackoverflow.com/questions/61415597/ggplot-custom-category-legend-for-shapefile
+# https://stackoverflow.com/questions/55167464/manual-fill-geom-tile-with-multiple-scales-by-group
+
+# Horizontal legend oesn't work because of expressions in legend labels - they are always left justified and can't be placed over breaks between bins
+# ggplot(data = tresult,aes(x=scen.x, y=Name, fill=net.damage_f)) + 
+#   geom_tile() +
+#   scale_fill_manual(values = rev(cols), drop = FALSE, labels = labs) +
+#   facet_wrap(vars(SLR)) +
+#   coord_equal() +
+#   theme_minimal() +
+#   labs(x = "OLU Protection Scenario", y = "OLU") +
+#   theme(legend.position = "bottom", legend.direction = "horizontal", legend.spacing.x = unit(0, 'cm')) +
+#   guides(fill=guide_legend(nrow=1, label.position = "top", title.position = "top", title = "Net Change Damage ($)", label.hjust = 0))
+
+# Too many classes  
+ggplot(data = tresult,aes(x=scen.x, y=Name, fill=net.damage_f)) + 
+  geom_tile() +
+  scale_fill_manual(values = rev(cols), drop = FALSE, labels = rev(labs)) +
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.position = "right", legend.key.size = unit(.2, 'cm'), legend.text=element_text(size=10)) +
+  guides(fill=guide_legend(ncol = 1, label.position = "left", title.position = "top", title = "Net Change Damage ($)", label.vjust = -1.75, reverse = TRUE))
+
+```
+
+```{r, echo=FALSE}
+# To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
+getPalette<-colorRampPalette(brewer.pal(14, "RdBu")) # function, change if different palette is desired
+cols<-getPalette(14) # Needs to be odd number to ensure midpoint color is correct
+#cols<-cols[3:14] # Asymmetric diverging palette
+#show_col(cols)
+labs<-expression(paste("10"^"12"),paste("10"^"10"),paste("10"^"8"),paste("10"^"6"),paste("10"^"4"),paste("10"^"2"),"",paste("-10"^"2"),paste("-10"^"4"),paste("-10"^"6"),paste("-10"^"8"),paste("-10"^"10"),paste("-10"^"12"))
+
+# # Set small values to white
+# cols[6:12]<-cols[14:20]<-"#F7F7F7"
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+
+# Damage as a factor
+tresult$net.damage_f<-cut(tresult$net.damage,
+                      breaks = c(+Inf,10^12,10^10,10^8,10^6,10^4,10^2,0,-10^2,-10^4,-10^6,-10^8,-10^10,-10^12,-Inf))
+
+# Below based on advice:
+# https://stackoverflow.com/questions/61415597/ggplot-custom-category-legend-for-shapefile
+# https://stackoverflow.com/questions/55167464/manual-fill-geom-tile-with-multiple-scales-by-group
+
+ggplot(data = tresult,aes(x=scen.x, y=Name, fill=net.damage_f)) + 
+  geom_tile() +
+  scale_fill_manual(values = rev(cols), drop = FALSE, labels = rev(labs)) +
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.position = "right", legend.key.size = unit(.5, 'cm')) +
+  guides(fill=guide_legend(ncol = 1, label.position = "left", title.position = "top", title = "Net Change Damage ($)", label.vjust = 2.25, reverse = TRUE))
+
+```
+
+```{r, echo=FALSE}
+# To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
+getPalette<-colorRampPalette(brewer.pal(9, "RdBu")) # function, change if different palette is desired
+cols<-getPalette(14) # Needs to be odd number to ensure midpoint color is correct
+#cols<-cols[3:14] # Asymmetric diverging palette
+#show_col(cols)
+labs<-expression(paste("10"^"12"),paste("10"^"10"),paste("10"^"8"),paste("10"^"6"),paste("10"^"4"),paste("10"^"2"),"",paste("-10"^"2"),paste("-10"^"4"),paste("-10"^"6"),paste("-10"^"8"),paste("-10"^"10"),paste("-10"^"12"))
+
+# # Set small values to white
+cols[5:10]<-"#F7F7F7"
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+
+# Damage as a factor
+tresult$net.damage_f<-cut(tresult$net.damage,
+                      breaks = c(+Inf,10^12,10^10,10^8,10^6,10^4,10^2,0,-10^2,-10^4,-10^6,-10^8,-10^10,-10^12,-Inf))
+tresult$net.damage_f<-tresult$net.damage_f
+
+
+# Below based on advice:
+# https://stackoverflow.com/questions/61415597/ggplot-custom-category-legend-for-shapefile
+# https://stackoverflow.com/questions/55167464/manual-fill-geom-tile-with-multiple-scales-by-group
+
+ggplot(data = tresult,aes(x=scen.x, y=Name, fill=net.damage_f)) + 
+  geom_tile() +
+  #geom_hline(yintercept=17.5, linetype="dashed", color = "black") +
+  #geom_vline(xintercept=17.5, linetype="dashed", color = "black") +
+  scale_fill_manual(values = rev(cols), drop = FALSE, labels = rev(labs)) +
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.position = "right", legend.key.size = unit(.5, 'cm')) +
+  guides(fill=guide_legend(ncol = 1, label.position = "left", title.position = "top", title = "Net Change Damage ($)", label.vjust = 2.25, reverse = TRUE))
+
 ```
 
 ## Net external damage from protection scenarios - individual impacts on external OLUs. Dashed vertical lines are sample means.
@@ -569,6 +721,25 @@ ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) +
 ```
 
 ```{r, echo=FALSE, fig.align="center"}
+cols<-getPalette(11) # Needs to be odd number to ensure midpoint color is correct
+cols<-cols[2:11] # Asymmetric diverging palette
+colscale<-c(10^8,10^6,10^4,10^2,0,-10^2,-10^4,-10^6,-10^8,-10^10)
+labs<-expression(paste("10"^"8"),paste("10"^"6"),paste("10"^"4"),paste("10"^"2"),0,paste("-10"^"2"),paste("-10"^"4"),paste("-10"^"6"),paste("-10"^"8"),paste("-10"^"10"))
+
+# Change small values to white
+cols[3:4]<-cols[6:7]<-"#F7F7F7"
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) + 
+  geom_tile() + 
+  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Volume (Cubic Meters)", guide=guide_legend(), limits = c(-10^10,10^8)) +
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.text.align = 0) 
+```
+
+```{r, echo=FALSE, fig.align="center"}
 cols<-getPalette(9) # Needs to be odd number to ensure midpoint color is correct
 cols<-cols[2:9] # Asymmetric diverging palette
 colscale<-c(10^9,10^6,10^3,0,-10^3,-10^6,-10^9,-10^12)
@@ -998,5 +1169,31 @@ ggsave("Boxplot.eps")
 
 y
 
+```
+```{r}
+SLR_comp_v<-ggplot(stst[stst$Type=="external",], aes(x=SLR,y=Volume,fill=SLR)) +
+  geom_boxplot(outlier.shape = NA) +
+  theme_minimal() +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+
+SLR_comp_d<-ggplot(stst[stst$Type=="external",], aes(x=SLR,y=Damage,fill=SLR)) +
+  geom_boxplot(outlier.shape = NA) +
+  theme_minimal() +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+
+bf.e_comp<-ggplot(bf.e, aes(x=as.factor(SLR),y=net.volume,fill=as.factor(SLR))) +
+  geom_boxplot(outlier.shape = NA) +
+  theme_minimal() +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+  
+SLR_comp_v + SLR_comp_d + bf.e_comp  
+```
+
+```{r}
+ggplot(fresult.ni, aes(x=as.factor(SLR),y=net.volume,fill=as.factor(SLR))) +
+  geom_boxplot(outlier.shape = NA) +
+  theme_minimal() +
+  coord_cartesian(ylim=c(-250000, 750000)) +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
 ```
 
