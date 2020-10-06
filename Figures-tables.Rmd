@@ -230,14 +230,7 @@ OLUclass<-df %>%
 ```{r, echo = FALSE, fig.align="center"}
 kable(OLUclass, caption = "Mean external damage from protection, by OLU geomorphic type", digits = 1, format.args = list(big.mark = ","))
 ```
-
-*NLCD analysis*
-
-```{r figurename, echo=FALSE, fig.cap="NLCD 2016 Land Use Classification", out.width = '33%', fig.align="center"}
-knitr::include_graphics("./Data/NLCD_Colour_Classification_Update.jpg")
-```
-
-**Landcover within geomorphic types - match color of letters to fill**
+**NLCD Landcover within geomorphic types**
 ```{r `Tukey boxplot`, echo=FALSE, fig.align="center"}
 lc<-df
 lc$X2<-lc$X21+lc$X22+lc$X23+lc$X24
@@ -309,41 +302,6 @@ b<-b+geom_text(data = final,  aes(x=x, y=Geomorphic, label=Letters, color=Geomor
 ggsave(file="Landcover.eps")
 
 b
-```
-
-
-**Regression 1** OLS regression of the general form *net external damage = f(mean elevation)*: observations at the OLU level (n=30), SLR 200
-
-```{r, echo = FALSE, fig.align="center"}
-# Regression
-summary(mr<-lm(SLR200 ~ meanele,df))
-```
-
-**Regression 2** OLS regression of the general form *net external damage = f(land cover, mean elevation)*: observations at the OLU level (n=30), SLR 200
-
-```{r, echo = FALSE, fig.align="center"}
-# Regression
-summary(mr<-lm(SLR200 ~ X11+X21+X23+X24+X31+X41+X42+X43+X52+X71+X81+X90+X95+meanele,df))
-```
-
-**Regression 3** Same as regression 2, but consolidating land cover types
-
-```{r, echo = FALSE, fig.align="center"}
-# Regression
-summary(mr<-lm(SLR200 ~ X1+X2+X3+X4+X5+X7+X8+X9+meanele,dfm))
-```
-
-**Regression 3** Same as regression 2, but unconsolidated and using percentage of land cover type by OLU
-
-```{r, echo = FALSE, fig.align="center"}
-# Regression
-summary(mr<-lm(SLR200 ~ X11+X21+X23+X24+X31+X41+X42+X43+X52+X71+X81+X90+X95+meanele,dfp))
-```
-
-**Regression 4** Unconsolidated regression using percentage of land cover type by OLU, all SLR scenarios
-
-```{r, echo = FALSE, fig.align="center"}
-summary(mr<-lm(net.damage ~ X11+X21+X23+X24+X31+X41+X42+X43+X52+X71+X81+X90+X95+meanele,dfa))
 ```
 
 ## Net benefits from protection across the entire bay
@@ -947,7 +905,7 @@ ggsave("Boxplot.eps")
 y
 
 ```
-```{r}
+```{r, echo=FALSE, include=FALSE}
 SLR_comp_v<-ggplot(stst[stst$Type=="external",], aes(x=SLR,y=Volume,fill=SLR)) +
   geom_boxplot(outlier.shape = NA) +
   theme_minimal() +
@@ -966,7 +924,7 @@ bf.e_comp<-ggplot(bf.e, aes(x=as.factor(SLR),y=Volume,fill=as.factor(SLR))) +
 SLR_comp_v + SLR_comp_d + bf.e_comp  
 ```
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 q1<-ggplot(fresult.ni, aes(x=as.factor(SLR),y=net.volume,fill=as.factor(SLR))) +
   geom_boxplot(outlier.shape = NA) +
   theme_minimal() +
@@ -982,7 +940,7 @@ q2<-ggplot(tresult.ni, aes(x=as.factor(SLR),y=net.damage,fill=as.factor(SLR))) +
 q1/q2
 ```
 
-```{r}
+```{r, echo=FALSE, include=FALSE}
 q3<-ggplot(tresult.ni[tresult.ni$Name==22,], aes(x=as.factor(SLR),y=net.damage,fill=as.factor(SLR))) +
   geom_boxplot(outlier.shape = NA) +
   theme_minimal() +
