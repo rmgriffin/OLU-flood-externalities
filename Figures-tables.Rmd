@@ -126,6 +126,8 @@ labs<-expression(paste("10"^"12"),"",paste("10"^"10"),"",paste("10"^"8"),"",past
 
 # Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
 
+cols[6:20]<-"#F7F7F7"
+
 ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) + 
   geom_tile() + 
   scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Damage ($)", guide=guide_legend(), limits = c(-10^12,10^12)) + # labels = scales::trans_format("log10", scales::math_format(10^.x)) <== doesn't work with negative logs
@@ -135,6 +137,36 @@ ggplot(data = tresult, aes(x=scen.x, y=Name, fill=net.damage)) +
   labs(x = "OLU Protection Scenario", y = "OLU") +
   theme(legend.text.align = 0) # https://stackoverflow.com/questions/26781676/align-legend-text-in-ggplot
 ```
+
+```{r, echo=FALSE}
+# To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
+getPalette<-colorRampPalette(brewer.pal(25, "RdBu")) # function, change if different palette is desired
+cols<-getPalette(25) # Needs to be odd number to ensure midpoint color is correct
+#show_col(cols)
+labs<-expression(paste("10"^"12"),paste("10"^"11"),paste("10"^"10"),paste("10"^"9"),paste("10"^"8"),paste("10"^"7"),paste("-10"^"7"),paste("-10"^"8"),paste("-10"^"9"),paste("-10"^"10"),paste("-10"^"11"),paste("-10"^"12"),paste("-10"^"13"))
+#colscale<-unname(quantile(tresult.ni$net.damage, probs = seq(0, 1, 1/4)))
+
+# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
+
+tresult$net.damage_f<-cut(tresult$net.damage,
+                      breaks = c(+Inf,10^12,10^11,10^10,10^9,10^8,10^7,-10^7,-10^8,-10^9,-10^10,-10^11,-10^12,-Inf))
+
+cols<-cols[c(1,3,5,7,9,11,13,15,17,19,21,23,25)]
+cols[7]<-cols[1]<-"#FFFFFF" # Manually adding another bin for labels at the ends
+
+ggplot(data = tresult,aes(x=scen.x, y=Name, fill=net.damage_f)) + 
+  geom_tile() +
+  scale_fill_manual(values = rev(cols), drop = FALSE, labels = rev(labs)) +
+  facet_wrap(vars(SLR)) +
+  coord_equal() +
+  theme_minimal() +
+  labs(x = "OLU Protection Scenario", y = "OLU") +
+  theme(legend.position = "right", legend.key.size = unit(.5, 'cm'), legend.text=element_text(size=10)) +
+  guides(fill=guide_legend(ncol = 1, label.position = "left", title.position = "top", title = "Net Change Damage ($)", label.vjust = -1, reverse = TRUE))
+```
+
+## No interpolation (num colors = num bins)
+
 ```{r, echo=FALSE}
 # To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
 getPalette<-colorRampPalette(brewer.pal(26, "RdBu")) # function, change if different palette is desired
@@ -721,22 +753,26 @@ ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) +
 ```
 
 ```{r, echo=FALSE, fig.align="center"}
-cols<-getPalette(11) # Needs to be odd number to ensure midpoint color is correct
-cols<-cols[2:11] # Asymmetric diverging palette
-colscale<-c(10^8,10^6,10^4,10^2,0,-10^2,-10^4,-10^6,-10^8,-10^10)
-labs<-expression(paste("10"^"8"),paste("10"^"6"),paste("10"^"4"),paste("10"^"2"),0,paste("-10"^"2"),paste("-10"^"4"),paste("-10"^"6"),paste("-10"^"8"),paste("-10"^"10"))
+cols<-getPalette(25) 
+labs<-expression(paste("-10"^"9"),paste("10"^"8"),paste("10"^"7"),paste("10"^"6"),paste("10"^"5"),paste("-10"^"5"),paste("-10"^"6"),paste("-10"^"7"),paste("-10"^"8"),paste("-10"^"9"),paste("-10"^"10"),paste("-10"^"11"))
 
-# Change small values to white
-cols[3:4]<-cols[6:7]<-"#F7F7F7"
-# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
-ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) + 
-  geom_tile() + 
-  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Volume (Cubic Meters)", guide=guide_legend(), limits = c(-10^10,10^8)) +
+fresult$net.volume_f<-cut(fresult$net.volume,
+                      breaks = c(+Inf,10^9,10^8,10^7,10^6,10^5,-10^5,-10^6,-10^7,-10^8,-10^9,-10^10,-Inf))
+
+
+
+cols<-cols[c(3,5,7,9,11,13,15,17,19,21,23,25)]
+cols[1]<-cols[6]<-"#FFFFFF"
+
+ggplot(data = fresult,aes(x=scen.x, y=OLU, fill=net.volume_f)) + 
+  geom_tile() +
+  scale_fill_manual(values = rev(cols), drop = FALSE, labels = rev(labs)) +
   facet_wrap(vars(SLR)) +
   coord_equal() +
   theme_minimal() +
   labs(x = "OLU Protection Scenario", y = "OLU") +
-  theme(legend.text.align = 0) 
+  theme(legend.position = "right", legend.key.size = unit(.5, 'cm'), legend.text=element_text(size=10)) +
+  guides(fill=guide_legend(ncol = 1, label.position = "left", title.position = "top", title = "Net Change Volume (Cubic Meters)", label.vjust = -1, reverse = TRUE))
 ```
 
 ```{r, echo=FALSE, fig.align="center"}
@@ -926,64 +962,76 @@ tmap_save(OLU2526f,"OLU2526f.eps") # https://rdrr.io/cran/tmap/man/tmap_save.htm
 ## Preparing data for statistical tests of boxplot figure 
 
 ## Damage data
-stst<-cf
-stst<-subset(stst, select = c(Name,OLUid,i.dmg.050,i.dmg.100,i.dmg.150,i.dmg.200,e.dmg.050,e.dmg.100,e.dmg.150,e.dmg.200))
-stst$n.dmg.050<-stst$i.dmg.050+stst$e.dmg.050
-stst$n.dmg.100<-stst$i.dmg.100+stst$e.dmg.100
-stst$n.dmg.150<-stst$i.dmg.150+stst$e.dmg.150
-stst$n.dmg.200<-stst$i.dmg.200+stst$e.dmg.200
-# Merge with type
-stst<-left_join(stst, gt, by='Name')
-# Wide to long on SLR
-colnames(stst)<-c("Name","OLUid","idmg.050","idmg.100","idmg.150","idmg.200","edmg.050","edmg.100","edmg.150","edmg.200","ndmg.050","ndmg.100","ndmg.150","ndmg.200","Geomorphic","geom","area")
-stst<-pivot_longer(stst,cols = ends_with(c("050","100","150","200")), names_to = c("Type", "SLR"), names_sep = "\\.", values_to = "Damage")
-stst$Type<-ifelse(stst$Type=="idmg","internal", ifelse(stst$Type=="edmg","external","net"))
+# Internal 
+gf.i<-tresult[which(tresult$Name==tresult$scen.x),]
+gf.i<-dplyr::select(gf.i, c(SLR,scen.x,net.damage))
+gf.i$Type<-"internal"
+# External change in damage and census blocks impacted by OLU
+gf.e<-tresult[which(tresult$Name!=tresult$scen.x),]
+gf.e<-gf.e %>%
+  group_by(SLR,scen.x) %>%
+  summarize_at(vars(net.damage),sum)
+gf.e$Type<-"external"
+# Merge and calculate net damage
+gf<-merge(gf.e, gf.i, by=c('scen.x','SLR'))
+gf$net.damage.z<-gf$net.damage.x+gf$net.damage.y
+gf$Type.z<-"net"
+
+# Long format
+# Alt to pivot longer https://community.rstudio.com/t/pivot-longer-on-multiple-column-sets-pairs/43958/2
+col_names<-c("SLR","OLUid","Damage","Type")
+gf.i<-dplyr::select(gf, c(SLR, scen.x, net.damage.y, Type.y)) %>% set_names(col_names)
+gf.e<-dplyr::select(gf, c(SLR, scen.x, net.damage.x, Type.x)) %>% set_names(col_names)
+gf.n<-dplyr::select(gf, c(SLR, scen.x, net.damage.z, Type.z)) %>% set_names(col_names)
+gf<-bind_rows(gf.i,gf.e,gf.n)
+
+# Character to integer
+gf$SLR<-as.numeric(gf$SLR)
 
 ## Flood data
-# Internal change in damage and census blocks impacted by OLU
+# Internal
 bf.i<-fresult[which(fresult$OLU==fresult$scen.x),]
-bf.i<-bf.i %>%
-  pivot_wider(id_cols = c(scen.x,SLR), names_from=SLR, values_from = c(net.area,net.volume))
-# External change in damage and census blocks impacted by OLU
+bf.i<-subset(bf.i, select = c(SLR,scen.x,net.volume))
+bf.i$Type<-"internal"
+# External
 bf.e<-fresult[which(fresult$OLU!=fresult$scen.x),]
 bf.e<-bf.e %>%
   group_by(SLR,scen.x) %>%
-  summarize_at(vars(net.area,net.volume),sum)
-bf.e<-bf.e %>%
-  pivot_wider(id_cols = c(scen.x,SLR), names_from=SLR, values_from = c(net.area,net.volume))
-# Merge into one table
-bf<-left_join(Exp, bf.i, by='scen.x') %>%
-                left_join(., bf.e, by='scen.x') %>%
-                left_join(., gt, by='Name')
+  summarize_at(vars(net.volume),sum)
+bf.e$Type<-"external"
+# Merge and calculate net flooding
+bf<-merge(bf.e, bf.i, by=c('scen.x','SLR'))
+bf$net.volume.z<-bf$net.volume.x+bf$net.volume.y
+bf$Type.z<-"net"
 
+# Long format
+# Alt to pivot longer https://community.rstudio.com/t/pivot-longer-on-multiple-column-sets-pairs/43958/2
+col_names<-c("SLR","OLUid","Volume","Type")
+bf.i<-dplyr::select(bf, c(SLR, scen.x, net.volume.y, Type.y)) %>% set_names(col_names)
+bf.e<-dplyr::select(bf, c(SLR, scen.x, net.volume.x, Type.x)) %>% set_names(col_names)
+bf.n<-dplyr::select(bf, c(SLR, scen.x, net.volume.z, Type.z)) %>% set_names(col_names)
+bf<-bind_rows(bf.i,bf.e,bf.n)
 
-colnames(bf)<-c("Name","numCB","sumtrv","OLUid","iarea.100","iarea.150","iarea.200", "iarea.050","ivol.100","ivol.150","ivol.200","ivol.050","earea.100","earea.150","earea.200", "earea.050","evol.100","evol.150","evol.200","evol.050","Geomorphic","geom","area")
-
-bf$nvol.050<-bf$ivol.050+bf$evol.050
-bf$nvol.100<-bf$ivol.100+bf$evol.100
-bf$nvol.150<-bf$ivol.150+bf$evol.150
-bf$nvol.200<-bf$ivol.200+bf$evol.200
-
-bf<-subset(bf, select = -c(iarea.100,iarea.150,iarea.200,iarea.050,earea.100,earea.150,earea.200,earea.050))
-bf$Name<-NULL
-
-bf<-pivot_longer(bf,cols = ends_with(c("050","100","150","200")), names_to = c("Type", "SLR"), names_sep = "\\.", values_to = "Volume")
-bf$Type<-ifelse(bf$Type=="ivol","internal", ifelse(bf$Type=="evol","external","net"))
-
-bf<-subset(bf, select = c(OLUid, Type, SLR, Volume))
 
 # Joining damage and flood data
-stst<-left_join(stst,bf,by=c("OLUid", "Type", "SLR"))
+stst<-left_join(gf,bf,by=c("OLUid", "Type", "SLR"))
 stst$Damage<-stst$Damage/1000000
 stst$Volume<-stst$Volume/1000000
+
+# Adding geomorphic info
+stst<-OLU %>% 
+  st_drop_geometry() %>%
+  dplyr::select(.,c(Geomorphic,OLU_ID)) %>%
+  set_names(.,c("Geomorphic","OLUid")) %>%
+  left_join(stst,.,by="OLUid")
 
 ```
 
 ```{r `Tukey boxplot figs prep`, echo=FALSE, fig.align="center"}
 # Recoding SLR variables https://stackoverflow.com/questions/43290483/r-changing-order-of-facets
-stst$SLR<-ifelse(stst$SLR=="050","50cm",
-                 ifelse(stst$SLR=="100","100cm",
-                        ifelse(stst$SLR=="150","150cm","200cm")))
+stst$SLR<-ifelse(stst$SLR==50,"50cm",
+                 ifelse(stst$SLR==100,"100cm",
+                        ifelse(stst$SLR==150,"150cm","200cm")))
 stst$SLR<-as.factor(stst$SLR)
 stst$SLR<-factor(stst$SLR, levels = c('50cm','100cm','150cm','200cm'))
 
@@ -1181,7 +1229,7 @@ SLR_comp_d<-ggplot(stst[stst$Type=="external",], aes(x=SLR,y=Damage,fill=SLR)) +
   theme_minimal() +
   theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
 
-bf.e_comp<-ggplot(bf.e, aes(x=as.factor(SLR),y=net.volume,fill=as.factor(SLR))) +
+bf.e_comp<-ggplot(bf.e, aes(x=as.factor(SLR),y=Volume,fill=as.factor(SLR))) +
   geom_boxplot(outlier.shape = NA) +
   theme_minimal() +
   theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
@@ -1190,10 +1238,32 @@ SLR_comp_v + SLR_comp_d + bf.e_comp
 ```
 
 ```{r}
-ggplot(fresult.ni, aes(x=as.factor(SLR),y=net.volume,fill=as.factor(SLR))) +
+q1<-ggplot(fresult.ni, aes(x=as.factor(SLR),y=net.volume,fill=as.factor(SLR))) +
   geom_boxplot(outlier.shape = NA) +
   theme_minimal() +
-  coord_cartesian(ylim=c(-250000, 750000)) +
+  coord_cartesian(ylim=c(-250000, 250000)) +
   theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+
+q2<-ggplot(tresult.ni, aes(x=as.factor(SLR),y=net.damage,fill=as.factor(SLR))) +
+  geom_boxplot(outlier.shape = NA) +
+  theme_minimal() +
+  coord_cartesian(ylim=c(-15000000, 15000000)) +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+
+q1/q2
 ```
 
+```{r}
+q3<-ggplot(tresult.ni[tresult.ni$Name==22,], aes(x=as.factor(SLR),y=net.damage,fill=as.factor(SLR))) +
+  geom_boxplot(outlier.shape = NA) +
+  theme_minimal() +
+  coord_cartesian(ylim=c(-55000000, 55000000)) +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+
+q4<-ggplot(tresult.ni[tresult.ni$Name==22,], aes(x=as.factor(SLR),y=mean.x,fill=as.factor(SLR))) +
+  geom_boxplot(outlier.shape = NA) +
+  theme_minimal() +
+  theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
+
+q3/q4
+```
