@@ -30,10 +30,13 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 # Downloading data using external script
 #source("Figures-tables-data.R")
 
+# Load data
+tresult<-read.csv("tresult.csv")
+tresult.ni<-tresult[which(tresult$Name!=tresult$scen.x),]
+
 ```
 
 ## Net damage from all OLU protection scenarios across OLUs, compared to baseline conditions, for all SLR scenarios  
-
 
 ```{r, echo=FALSE}
 # To use an asymmetric diverging palette, use a symmetric one and drop some from one or both sides https://www.r-bloggers.com/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/ 
@@ -61,7 +64,7 @@ ggplot(data = tresult,aes(x=scen.x, y=Name, fill=net.damage_f)) +
   theme(legend.position = "right", legend.key.size = unit(.5, 'cm'), legend.text=element_text(size=10)) +
   guides(fill=guide_legend(ncol = 1, label.position = "left", title.position = "top", title = "Net Change Damage ($)", label.vjust = -.75, reverse = TRUE))
 
-#ggsave("Damage_grid.eps")
+#ggsave(file="Damage_grid.eps")
 
 # Horizontal legend doesn't work because of expressions in legend labels - they are always left justified and can't be placed over breaks between bins
 # ggplot(data = tresult,aes(x=scen.x, y=Name, fill=net.damage_f)) + 
@@ -503,12 +506,13 @@ kable(within(cf2,rm(geom)),format = "latex")
 
 ## Water attributes by OLU
 
-```{r, include=FALSE, fig.align="center"}
+```{r, include=FALSE}
 fresult<-read.csv("fresult.csv")
 fresult.ni<-fresult[which(fresult$OLU!=fresult$scen.x),]
 ```
 
 ```{r, echo=FALSE, fig.align="center"}
+getPalette<-colorRampPalette(brewer.pal(25, "RdBu")) # function, change if different palette is desired
 cols<-getPalette(25) 
 labs<-expression(paste("10"^"8"),paste("10"^"7"),paste("10"^"6"),paste("10"^"5"),paste("-10"^"5"),paste("-10"^"6"),paste("-10"^"7"),paste("-10"^"8"),paste("-10"^"9"))
 
@@ -520,6 +524,8 @@ cols[1]<-cols[5]<-"#FFFFFF"
 
 ggplot(data = fresult,aes(x=scen.x, y=OLU, fill=net.volume_f)) + 
   geom_tile() +
+  #geom_hline(yintercept=17.5, linetype="dashed", color = "black") +
+  #geom_vline(xintercept=17.5, linetype="dashed", color = "black") +
   scale_fill_manual(values = rev(cols), drop = FALSE, labels = rev(labs)) +
   facet_wrap(vars(SLR)) +
   coord_equal() +
@@ -529,21 +535,6 @@ ggplot(data = fresult,aes(x=scen.x, y=OLU, fill=net.volume_f)) +
   guides(fill=guide_legend(ncol = 1, label.position = "left", title.position = "top", title = "Net Change Volume (Cubic Meters)", label.vjust = -1, reverse = TRUE))
 
 #ggsave(file="Volume_grid.eps")
-```
-
-```{r, echo=FALSE, fig.align="center"}
-# Template https://stackoverflow.com/questions/36637545/how-to-create-legend-continuous-colourbar-based-on-specific-range-of-values-in/36718315
-ggplot(data = fresult, aes(x=scen.x, y=OLU, fill=net.volume)) + 
-  geom_tile() + 
-    geom_hline(yintercept=17.5, linetype="dashed", color = "black") +
-  geom_vline(xintercept=17.5, linetype="dashed", color = "black") +
-  scale_fill_gradientn(colours = cols, values = rescale(colscale), breaks = colscale, labels = labs, name="Net Change Volume (Cubic Meters)", guide=guide_legend(), limits = c(-10^12,10^9)) +
-  facet_wrap(vars(SLR)) +
-  coord_equal() +
-  theme_minimal() +
-  labs(x = "OLU Protection Scenario", y = "OLU") +
-  theme(legend.text.align = 0) 
-#ggsave(file="name.eps")
 ```
 
 ```{r, include=FALSE}
