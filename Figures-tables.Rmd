@@ -33,6 +33,7 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 # Load data
 tresult<-read.csv("tresult.csv")
 tresult.ni<-tresult[which(tresult$Name!=tresult$scen.x),]
+tresult.i<-tresult[which(tresult$Name==tresult$scen.x),]
 
 ```
 
@@ -64,7 +65,7 @@ ggplot(data = tresult,aes(x=scen.x, y=Name, fill=net.damage_f)) +
   theme(legend.position = "right", legend.key.size = unit(.5, 'cm'), legend.text=element_text(size=10)) +
   guides(fill=guide_legend(ncol = 1, label.position = "left", title.position = "top", title = "Net Change Damage ($)", label.vjust = -.75, reverse = TRUE))
 
-#ggsave(file="Damage_grid.eps")
+ggsave(file="Damage_grid.eps")
 
 # Horizontal legend doesn't work because of expressions in legend labels - they are always left justified and can't be placed over breaks between bins
 # ggplot(data = tresult,aes(x=scen.x, y=Name, fill=net.damage_f)) + 
@@ -467,6 +468,7 @@ kable(within(cf2,rm(geom)),format = "latex")
 ```{r, include=FALSE}
 fresult<-read.csv("fresult.csv")
 fresult.ni<-fresult[which(fresult$OLU!=fresult$scen.x),]
+fresult.i<-fresult[which(fresult$OLU==fresult$scen.x),]
 ```
 
 ```{r, echo=FALSE, fig.align="center"}
@@ -501,6 +503,8 @@ OLU<-st_transform(OLU, st_crs(Pop))
 OLU$sumpop<-exact_extract(Pop, OLU, "sum")
 sum(OLU$sumpop)
 ```
+
+## Population by OLU
 
 ```{r, echo=FALSE, fig.align="center"}
 ggplot(OLU) +
@@ -870,6 +874,8 @@ z<-ggarrange(v_i,d_i,v_e,d_e,v_n,d_n, ncol = 2, nrow = 3, label.x = 0.05, label.
 
 
 ```
+
+## Boxplot of volume and damage by geomorphological type across SLR scenarios
 
 ```{r `Boxplot volume-damage`, echo=FALSE, fig.align="center", warning=FALSE}
 # Column and row titles using patchwork https://stackoverflow.com/questions/60347583/add-row-and-column-titles-with-ggarrange
