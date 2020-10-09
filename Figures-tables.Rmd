@@ -494,7 +494,7 @@ ggplot(data = fresult,aes(x=scen.x, y=OLU, fill=net.volume_f)) +
   theme(legend.position = "right", legend.key.size = unit(.5, 'cm'), legend.text=element_text(size=10)) +
   guides(fill=guide_legend(ncol = 1, label.position = "left", title.position = "top", title = "Net Change Volume (Cubic Meters)", label.vjust = -1, reverse = TRUE))
 
-#ggsave(file="Volume_grid.eps")
+ggsave(file="Volume_grid.eps")
 ```
 
 ```{r, include=FALSE}
