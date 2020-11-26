@@ -30,7 +30,7 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 # Downloading data using external script
 #source("Figures-tables-data.R")
 
-# Load data
+# Load remaining data (outputs from "Damage-volume-analysis.R")
 tresult<-read.csv("tresult.csv")
 tresult.ni<-tresult[which(tresult$Name!=tresult$scen.x),]
 tresult.i<-tresult[which(tresult$Name==tresult$scen.x),]
@@ -959,4 +959,57 @@ q4<-ggplot(tresult.ni[tresult.ni$Name==22,], aes(x=as.factor(SLR),y=mean.x,fill=
   theme(axis.text.x=element_blank(), axis.title.x = element_blank(), legend.title = element_blank(), legend.box = "horizontal")
 
 q3/q4
+```
+
+Durr et al. (2011; DOI: 10.1007/s12237-011-9381-y) classify global coastline into classes. The shoreline layer below is from the supplement to that paper. Estimates of 2020 gridded global population below are from WorldPop (DOI: 10.5258/SOTON/WP00647). 
+
+```{r, `coastal population`, echo=FALSE, include=FALSE}
+coast<-st_read("./Data/Shoreline.gpkg", crs = 4326)
+wpop<-raster("./Data/ppp_2020_1km_Aggregated.tif")
+coast<-st_transform(coast, crs = 3857)
+coast<-dplyr::select(coast,c(FIN_TYP,geom))
+wpop<-projectRaster(wpop, crs = "+init=epsg:3857") # Projection suitable for buffering in meters at global scale
+
+# # Make sure layers are as expected
+# tm_shape(wpop) +
+#   tm_raster() +
+#   tm_shape(coast) +
+#   tm_lines(col = "red")
+
+coast$length<-st_length(coast)
+
+sum(coast[coast$FIN_TYP==2,]$length)/sum(coast$length)*100 # Class 2 makes up 21% of global shoreline length
+
+buf<-c(1000,5000,10000,25000,50000,100000)
+
+# Function for percent population in class 2, as a function of coastline buffer size
+
+CBP<-function(b){
+
+  cst<-st_buffer(coast,b)
+
+  cst$sumpop<-exact_extract(wpop, cst, "sum")
+  a<-sum(cst[cst$FIN_TYP==2,]$sumpop)/sum(cst$sumpop)*100
+  e<-sum(cst[cst$FIN_TYP==2,]$sumpop)/1000000
+  f<-sum(cst$sumpop)/1000000
+  
+  d<-data.frame(matrix(0, nrow = 1, ncol = 4))
+  colnames(d)<-c("Pct","Buffer (m)","Pop in Class 2 (mil)","Total Pop (mil)")
+  
+  d[1,1]<-a
+  d[1,2]<-b
+  d[1,3]<-e
+  d[1,4]<-f
+  
+  return(d)
+}  
+
+tz<-map_dfr(buf, CBP)
+
+
+tz<-st_buffer(coast,100000)
+  tm_shape(tz) +
+  tm_polygons(border.col = "red")
+  
+# When you buffer discrete line segments, they overlap with buffers from other segments. Solution to this is to create two separate layers, one where all shoreline segments are buffered, then removing internal boundaries using dissolve, and another where only class 2 segments are buffered and dissolved. The first estimates total shoreline population within x distance, the second gets you population within x distance for class 2. In both cases, dissolving makes sure no double counting takes place.  
 ```
