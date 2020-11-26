@@ -986,12 +986,17 @@ buf<-c(1000,5000,10000,25000,50000,100000)
 
 CBP<-function(b){
 
-  cst<-st_buffer(coast,b)
+  cst.tot<-st_buffer(coast,b)
+  cst.tot<-st_union(cst.tot)
+  cst.tot<-st_sf(cst.tot) # All coastline buffered by "b", dissolved Roughly following this advice https://www.jla-data.net/2018/02/14/2018-02-14-dissolving-polygons-in-sf-environment/
+  
+  cst.class2<-st_buffer(coast[coast$FIN_TYP==2,],b)
+  cst.class2<-st_union(cst.class2)
+  cst.class2<-st_sf(cst.class2) # Class 2 coastline buffered by "b", dissolved
 
-  cst$sumpop<-exact_extract(wpop, cst, "sum")
-  a<-sum(cst[cst$FIN_TYP==2,]$sumpop)/sum(cst$sumpop)*100
-  e<-sum(cst[cst$FIN_TYP==2,]$sumpop)/1000000
-  f<-sum(cst$sumpop)/1000000
+  e<-(exact_extract(wpop, cst.class2, "sum"))/1000000
+  f<-(exact_extract(wpop, cst.tot, "sum"))/1000000
+  a<-e/f*100
   
   d<-data.frame(matrix(0, nrow = 1, ncol = 4))
   colnames(d)<-c("Pct","Buffer (m)","Pop in Class 2 (mil)","Total Pop (mil)")
@@ -1005,11 +1010,4 @@ CBP<-function(b){
 }  
 
 tz<-map_dfr(buf, CBP)
-
-
-tz<-st_buffer(coast,100000)
-  tm_shape(tz) +
-  tm_polygons(border.col = "red")
-  
-# When you buffer discrete line segments, they overlap with buffers from other segments. Solution to this is to create two separate layers, one where all shoreline segments are buffered, then removing internal boundaries using dissolve, and another where only class 2 segments are buffered and dissolved. The first estimates total shoreline population within x distance, the second gets you population within x distance for class 2. In both cases, dissolving makes sure no double counting takes place.  
 ```
