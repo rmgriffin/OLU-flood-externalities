@@ -975,7 +975,11 @@ wpop<-projectRaster(wpop, crs = "+init=epsg:3857") # Projection suitable for buf
 gele<-raster("./Data/srtmv4_30s.tif")
 suppressWarnings(gele<-projectRaster(gele, wpop, method = 'bilinear')) # Consistent projection with other layers
 coast_ne<-ne_download(10,type = "coastline", category = "physical",returnclass = "sf") # Natural Earth global coastline
+<<<<<<< HEAD
 coast_ne<-st_transform(coast_ne,st_crs(gele))
+=======
+coast_ne<-st_transform(coast_ne,st_crs(gele.poly))
+>>>>>>> 704036cefb66a0153eb05a824c4e4cb2380628f1
 
 # Coastline % length in Class 2 (bays/estuaries) 
 coast$length<-st_length(coast)
@@ -986,7 +990,11 @@ gele[gele < 10] <- 1
 gele[gele >= 10] <- NA
 
 # Mask needs to account for connectivity to coastline: 1) Convert raster to polygons; 2) 
+<<<<<<< HEAD
 system.time(gele.poly<-rasterToPolygons(gele,na.rm = TRUE,dissolve = TRUE)) # Takes long time (2hrs on high performance machine if dissolve = TRUE)
+=======
+system.time(gele.poly<-rasterToPolygons(gele,na.rm = TRUE,dissolve = FALSE)) # Takes long time (2hrs on high performance machine if dissolve = TRUE)
+>>>>>>> 704036cefb66a0153eb05a824c4e4cb2380628f1
 gele.poly<-st_as_sf(gele.poly)
 gele.poly<-st_cast(gele.poly, "POLYGON") # https://gis.stackexchange.com/questions/305734/splitting-multipart-polygons-to-single-part-in-r
 gele.poly<-st_join(gele.poly,coast_ne,left = FALSE) # Filtering by connectivity to the coast, using natural earth coastline as it is much more representative of the shoreline than classified shoreline vector
