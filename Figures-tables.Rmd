@@ -11,7 +11,7 @@ rm(list=ls()) # Clears workspace
 knitr::opts_chunk$set(echo = TRUE)
 
 # Packages
-PKG <- c("multcomp","multcompView","tidyverse","scales","gridExtra","ggthemes","viridis","knitr","sf","exactextractr","raster","data.table","sf", "RColorBrewer","tmap", "ggpubr", "patchwork") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
+PKG <- c("multcomp","multcompView","tidyverse","scales","gridExtra","ggthemes","viridis","knitr","sf","exactextractr","raster","data.table","sf", "RColorBrewer","tmap", "ggpubr", "patchwork", "rgeos","rnaturalearth","fasterize") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
 
 for (p in PKG) {
   if(!require(p,character.only = TRUE)) {  
@@ -964,50 +964,72 @@ q3/q4
 Durr et al. (2011; DOI: 10.1007/s12237-011-9381-y) classify global coastline into classes. The shoreline layer below is from the supplement to that paper. Estimates of 2020 gridded global population below are from WorldPop (DOI: 10.5258/SOTON/WP00647). 
 
 ```{r, `coastal population`, echo=FALSE, include=FALSE}
-coast<-st_read("./Data/Shoreline.gpkg", crs = 4326)
-wpop<-raster("./Data/ppp_2020_1km_Aggregated.tif")
+## Using approach for population in different classes (technically closest to different shoreline classes), conditional on population being under X elevation and hydrologically connected to the shoreline  
+
+# Inputs
+coast<-st_read("./Data/Shoreline.gpkg", crs = 4326) # Coastline from https://dx.doi.org/10.1007/s12237-011-9381-y
+wpop<-raster("./Data/ppp_2020_1km_Aggregated.tif") # WorldPop raster https://www.worldpop.org/geodata/summary?id=24777
 coast<-st_transform(coast, crs = 3857)
 coast<-dplyr::select(coast,c(FIN_TYP,geom))
 wpop<-projectRaster(wpop, crs = "+init=epsg:3857") # Projection suitable for buffering in meters at global scale
+gele<-raster("./Data/srtmv4_30s.tif")
+suppressWarnings(gele<-projectRaster(gele, wpop, method = 'bilinear')) # Consistent projection with other layers
+coast_ne<-ne_download(10,type = "coastline", category = "physical",returnclass = "sf") # Natural Earth global coastline
+coast_ne<-st_transform(coast_ne,st_crs(gele))
 
-# # Make sure layers are as expected
-# tm_shape(wpop) +
-#   tm_raster() +
-#   tm_shape(coast) +
-#   tm_lines(col = "red")
-
+# Coastline % length in Class 2 (bays/estuaries) 
 coast$length<-st_length(coast)
-
 sum(coast[coast$FIN_TYP==2,]$length)/sum(coast$length)*100 # Class 2 makes up 21% of global shoreline length
 
-buf<-c(1000,5000,10000,25000,50000,100000)
+# Transforming global elevation raster into mask for global population raster
+gele[gele < 10] <- 1
+gele[gele >= 10] <- NA
 
-# Function for percent population in class 2, as a function of coastline buffer size
+# Mask needs to account for connectivity to coastline: 1) Convert raster to polygons; 2) 
+system.time(gele.poly<-rasterToPolygons(gele,na.rm = TRUE,dissolve = TRUE)) # Takes long time (2hrs on high performance machine if dissolve = TRUE)
+gele.poly<-st_as_sf(gele.poly)
+gele.poly<-st_cast(gele.poly, "POLYGON") # https://gis.stackexchange.com/questions/305734/splitting-multipart-polygons-to-single-part-in-r
+gele.poly<-st_join(gele.poly,coast_ne,left = FALSE) # Filtering by connectivity to the coast, using natural earth coastline as it is much more representative of the shoreline than classified shoreline vector
+gele<-fasterize(gele.poly,wpop,field = "layer")
+epop<-gele*wpop # Exposed population
 
-CBP<-function(b){
+# Nearest class to each raster cell 
+system.time(pts.epop<-rasterToPoints(epop, spatial = TRUE)) 
+pts.epop<-st_as_sf(pts.epop)
+pts.epop<-st_transform(pts.epop,st_crs(coast))
+system.time(index<-st_nearest_feature(pts.epop, coast))
+coast.epop<-coast %>% slice(index)
+f<-cbind(pts.epop,coast.epop)
+sum(f$layer)/1000000 # Total global population at <10m elevation and hydrologically connected to the shoreline, in millions
+sum(f[f$FIN_TYP==2,]$layer)/1000000 # Total global population from the above group nearest to tidally influenced bays/estuaries, in millions
 
-  cst.tot<-st_buffer(coast,b)
-  cst.tot<-st_union(cst.tot)
-  cst.tot<-st_sf(cst.tot) # All coastline buffered by "b", dissolved Roughly following this advice https://www.jla-data.net/2018/02/14/2018-02-14-dissolving-polygons-in-sf-environment/
-  
-  cst.class2<-st_buffer(coast[coast$FIN_TYP==2,],b)
-  cst.class2<-st_union(cst.class2)
-  cst.class2<-st_sf(cst.class2) # Class 2 coastline buffered by "b", dissolved
-
-  e<-(exact_extract(wpop, cst.class2, "sum"))/1000000
-  f<-(exact_extract(wpop, cst.tot, "sum"))/1000000
-  a<-e/f*100
-  
-  d<-data.frame(matrix(0, nrow = 1, ncol = 4))
-  colnames(d)<-c("Pct","Buffer (m)","Pop in Class 2 (mil)","Total Pop (mil)")
-  
-  d[1,1]<-a
-  d[1,2]<-b
-  d[1,3]<-e
-  d[1,4]<-f
-  
-  return(d)
-}  
-
-tz<-map_dfr(buf, CBP)
+# # Function for population in class 2, as a function of coastline buffer size
+# 
+# CBP<-function(b,pop){
+# 
+#   cst.tot<-st_buffer(coast,b)
+#   cst.tot<-st_union(cst.tot)
+#   cst.tot<-st_sf(cst.tot) # All coastline buffered by "b", dissolved roughly following this advice https://www.jla-data.net/2018/02/14/2018-02-14-dissolving-polygons-in-sf-environment/
+#   
+#   cst.class2<-st_buffer(coast[coast$FIN_TYP==2,],b)
+#   cst.class2<-st_union(cst.class2)
+#   cst.class2<-st_sf(cst.class2) # Class 2 coastline buffered by "b", dissolved
+# 
+#   e<-(exact_extract(pop, cst.class2, "sum"))/1000000
+#   f<-cellStats(epop,"sum",asSample=FALSE)/1000000
+#   a<-e/f*100
+#   
+#   d<-data.frame(matrix(0, nrow = 1, ncol = 4))
+#   colnames(d)<-c("Pct","Buffer (m)","Pop in Class 2 (mil)","Total Pop (mil)")
+#   
+#   d[1,1]<-a
+#   d[1,2]<-b
+#   d[1,3]<-e
+#   d[1,4]<-f
+#   
+#   return(d)
+# }  
+# 
+# buf<-c(1000,5000,10000,25000,50000,100000)
+# tz<-map2_dfr(buf, list(wpop), CBP) # Second argument needs to be a list for it to be recycled for every iteration through "buf"
 ```
