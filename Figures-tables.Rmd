@@ -11,7 +11,7 @@ rm(list=ls()) # Clears workspace
 knitr::opts_chunk$set(echo = TRUE)
 
 # Packages
-PKG <- c("multcomp","multcompView","tidyverse","scales","gridExtra","ggthemes","viridis","knitr","sf","exactextractr","raster","data.table","sf", "RColorBrewer","tmap", "ggpubr", "patchwork", "rgeos","rnaturalearth","fasterize") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
+PKG <- c("multcomp","multcompView","tidyverse","scales","gridExtra","ggthemes","viridis","knitr","sf","exactextractr","raster","data.table","sf", "RColorBrewer","tmap", "ggpubr", "patchwork", "rgeos","rnaturalearth","fasterize", "broom","xtable") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
 
 for (p in PKG) {
   if(!require(p,character.only = TRUE)) {  
@@ -911,6 +911,40 @@ ggsave("Boxplot.eps")
 y
 
 ```
+
+
+
+```{r `Tukey test numbers`, echo=FALSE, fig.align="center", warning=FALSE}
+
+inoutnet<-list("internal","internal","internal","internal","external","external","external","external","net","net","net","net","internal","internal","internal","internal","external","external","external","external","net","net","net","net")
+SLRlist<-list("50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm")
+DamVol<-list("Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume")
+
+Tuk<-function(x,y,z){
+  subd <- subset(stst[stst$Type==x,], SLR==y)
+  model=lm(reformulate("Geomorphic",z), data=subd)
+  ANOVA=aov(model)
+  TUKEY <-tidy(TukeyHSD(ANOVA))
+  TUKEY$Type<-x
+  TUKEY$SLR<-y
+  TUKEY$Measure<-z
+  return(TUKEY)
+}
+
+options(scipen = 999)
+
+TukTable<-pmap_dfr(list(inoutnet,SLRlist,DamVol), Tuk)
+TukTable<-TukTable[order(TukTable$Measure,TukTable$Type,TukTable$SLR),]
+TukTable<-TukTable %>% dplyr::select(contrast,adj.p.value,Type,SLR,Measure)
+TukTable$adj.p.value<-round(TukTable$adj.p.value,digits = 3)
+
+print(xtable(TukTable, type = "latex"), file = "TukTable.tex")
+
+```
+
+
+
+
 ```{r, echo=FALSE, include=FALSE}
 SLR_comp_v<-ggplot(stst[stst$Type=="external",], aes(x=SLR,y=Volume,fill=SLR)) +
   geom_boxplot(outlier.shape = NA) +
