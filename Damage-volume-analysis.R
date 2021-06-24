@@ -291,41 +291,40 @@ setwd("./050")
 folder_url<-"https://drive.google.com/open?id=1lYNtOw1zmhAnwR1n4X69ycQw9hOA8ko4"
 folder <- drive_get(as_id(folder_url))
 files <- drive_ls(folder) # ", n_max = 2" Only two rasters for testing purposes
-plan(sequential)
-plan(multisession(workers = 8))
+# plan(sequential)
+# plan(multisession(workers = 8))
 dl<-function(files){
   walk(files, ~ drive_download(as_id(.x), overwrite = TRUE))
 }
-system.time(future_map(files$id,dl))
-# Code to edit if GD doesn't get all files, some missing
+system.time(map(files$id,dl))
+# Code if GD doesn't get all files, some missing
 rs<-list.files()
 files <- files[ !files$name %in% rs, ]
 system.time(future_map(files$id,dl))
-# Code to edit if GD doesn't get all the files, not finished downloading
+# Code if GD doesn't get all the files, not finished downloading
 rs<-list.files()
 rs<-rs[sapply(rs, file.size) < 3000000000]
 files <- drive_ls(folder)
 files <- files[ files$name %in% rs, ]
-system.time(future_map(files$id,dl))
+system.time(map(files$id,dl))
 # Unzip
 rs<-list.files()
-plan(multisession(workers = 1))
-system.time(future_map(rs,decompress_file,".")) 
-# Move tifs to 050 base dir
-rs<-list.files(".",recursive = TRUE)
-map(rs,file.move,".",overwrite = TRUE)
-unlink("global/", recursive = TRUE) # Remove unneeded directory
+#plan(multisession(workers = 8))
+system.time(map(rs,decompress_file,".")) 
+# # Move tifs to 050 base dir
+# rs<-list.files(".",recursive = TRUE)
+# map(rs,file.move,".",overwrite = TRUE)
+# unlink("global/", recursive = TRUE) # Remove unneeded directory
 # Damage assessment
 tifs050<-list.files(".",pattern = "*.tif",recursive = TRUE)
-#plan(multisession(workers = 2)) # Uses too much memory
-#system.time(res050.t<-future_map(tifs050,damage, n = 100))
-plan(sequential)
-system.time(res050<-lapply(tifs050,damage, n = 100))
+plan(multisession(workers = 3)) # Care needed to not exceed available memory
+system.time(res050<-future_map(tifs050,damage, n = 100, .options = future_options(seed = TRUE)))
+# plan(sequential) # Use this approach if memory limited
+# system.time(res050<-lapply(tifs050,damage, n = 100))
 # Flood assessment
 system.time(result.050<-map_df(tifs050,flood, .id = "tifs050"))
 setwd("..")
 unlink("./050", recursive = TRUE) # Delete tif directory
-
 
 ## SLR 100
 dir.create(file.path('100'), recursive = TRUE)
@@ -333,22 +332,31 @@ setwd("./100")
 folder_url<-"https://drive.google.com/open?id=1qRXdzE9KC16-ODh5awV1rdV3HjmcnnpT"
 folder <- drive_get(as_id(folder_url))
 files <- drive_ls(folder)
-plan(sequential)
-plan(multisession(workers = 8))
+#plan(sequential)
+#plan(multisession(workers = 8))
 dl<-function(files){
   walk(files, ~ drive_download(as_id(.x), overwrite = TRUE))
 }
-system.time(future_map(files$id,dl)) 
+system.time(map(files$id,dl)) 
+# Code if GD doesn't get all files, some missing
 rs<-list.files()
-plan(multisession(workers = 1))
-system.time(future_map(rs,decompress_file,"."))  
-# Move tifs to 100 base dir
-rs<-list.files(".",recursive = TRUE)
-map(rs,file.move,".",overwrite = TRUE)
-unlink("global/", recursive = TRUE) # Remove unneeded directory
+files <- files[ !files$name %in% rs, ]
+system.time(future_map(files$id,dl))
+# Code if GD doesn't get all the files, not finished downloading
+rs<-list.files()
+rs<-rs[sapply(rs, file.size) < 3000000000]
+files <- drive_ls(folder)
+files <- files[ files$name %in% rs, ]
+system.time(map(files$id,dl))
+# Unzip
+rs<-list.files()
+#plan(multisession(workers = 1))
+system.time(map(rs,decompress_file,"."))  
 # Damage assessment
 tifs100<-list.files(".",pattern = "*.tif",recursive = TRUE)
-system.time(res100<-lapply(tifs100,damage, n = 100))
+plan(multisession(workers = 3)) # Care needed to not exceed available memory
+system.time(res100<-future_map(tifs100,damage, n = 100, .options = future_options(seed = TRUE)))
+#system.time(res100<-lapply(tifs100,damage, n = 100))
 # Flood assessment
 system.time(result.100<-map_df(tifs100,flood, .id = "tifs100"))
 setwd("..")
@@ -360,22 +368,31 @@ setwd("./150")
 folder_url<-"https://drive.google.com/open?id=149aM7lIiXwQw2mRvtluv9WkBYZR61hv4"
 folder <- drive_get(as_id(folder_url))
 files <- drive_ls(folder) 
-plan(sequential)
-plan(multisession(workers = 8))
+# plan(sequential)
+# plan(multisession(workers = 8))
 dl<-function(files){
   walk(files, ~ drive_download(as_id(.x), overwrite = TRUE))
 }
-system.time(future_map(files$id,dl))
+system.time(map(files$id,dl))
+# Code if GD doesn't get all files, some missing
 rs<-list.files()
-plan(multisession(workers = 1))
-system.time(future_map(rs,decompress_file,"."))
-# Move tifs to 150 base dir
-rs<-list.files(".",recursive = TRUE)
-map(rs,file.move,".",overwrite = TRUE)
-unlink("global/", recursive = TRUE) # Remove unneeded directory
+files <- files[ !files$name %in% rs, ]
+system.time(future_map(files$id,dl))
+# Code if GD doesn't get all the files, not finished downloading
+rs<-list.files()
+rs<-rs[sapply(rs, file.size) < 3000000000]
+files <- drive_ls(folder)
+files <- files[ files$name %in% rs, ]
+system.time(map(files$id,dl))
+# Unzip
+rs<-list.files()
+#plan(multisession(workers = 1))
+system.time(map(rs,decompress_file,"."))
 # Damage assessment
 tifs150<-list.files(".",pattern = "*.tif",recursive = TRUE)
-system.time(res150<-lapply(tifs150,damage, n = 100))
+plan(multisession(workers = 3)) # Care needed to not exceed available memory
+system.time(res150<-future_map(tifs150,damage, n = 100, .options = future_options(seed = TRUE)))
+#system.time(res150<-lapply(tifs150,damage, n = 100))
 # Flood assessment
 system.time(result.150<-map_df(tifs150,flood, .id = "tifs150"))
 setwd("..")
@@ -387,22 +404,31 @@ setwd("./200")
 folder_url<-"https://drive.google.com/open?id=1o02Qlr0L39rVYlr7Zk7UxVUR_czsT85u"
 folder <- drive_get(as_id(folder_url))
 files <- drive_ls(folder)
-plan(sequential)
-plan(multisession(workers = 8))
+# plan(sequential)
+# plan(multisession(workers = 8))
 dl<-function(files){
   walk(files, ~ drive_download(as_id(.x), overwrite = TRUE))
 }
-system.time(future_map(files$id,dl)) 
+system.time(map(files$id,dl)) 
+# Code if GD doesn't get all files, some missing
 rs<-list.files()
-plan(multisession(workers = 1))
-system.time(future_map(rs,decompress_file,".")) 
-# Move tifs to 200 base dir
-rs<-list.files(".",recursive = TRUE)
-map(rs,file.move,".",overwrite = TRUE)
-unlink("global/", recursive = TRUE) # Remove unneeded directory
+files <- files[ !files$name %in% rs, ]
+system.time(future_map(files$id,dl))
+# Code if GD doesn't get all the files, not finished downloading
+rs<-list.files()
+rs<-rs[sapply(rs, file.size) < 3000000000]
+files <- drive_ls(folder)
+files <- files[ files$name %in% rs, ]
+system.time(map(files$id,dl))
+# Unzip
+rs<-list.files()
+# plan(multisession(workers = 1))
+system.time(map(rs,decompress_file,".")) 
 # Damage assessment
 tifs200<-list.files(".",pattern = "*.tif",recursive = TRUE)
-system.time(res200<-lapply(tifs200,damage, n = 100))
+plan(multisession(workers = 3)) # Care needed to not exceed available memory
+system.time(res200<-future_map(tifs200,damage, n = 100, .options = future_options(seed = TRUE)))
+#system.time(res200<-lapply(tifs200,damage, n = 100))
 # Flood assessment
 system.time(result.200<-map_df(tifs200,flood, .id = "tifs200"))
 setwd("..")
@@ -431,7 +457,8 @@ base<-result[which(result$scen == "olu_00000.0.0.000.000000.00000.00.00000.00_de
 # Damage for 30 protection scenarios across 30 OLUs by 4 SLR scenarios
 change<-result[which(result$scen != "olu_00000.0.0.000.000000.00000.00.00000.00_depth"), ]
 # Merge on SLR scenario and OLU
-tresult<-merge(change, base, c("SLR","Name"))
+tresult<-merge(change, base, c("SLR","Name")) 
+#tresult<-merge(change, base, c("SLR","CnssBlc")) # Census block
 # Net calculations, protection scenario vs baseline
 tresult$net.damage<-(tresult$mean.x-tresult$mean.y) 
 tresult$net.damage.var<-(tresult$var.x+tresult$var.y) # When subtracting two random variables, add their variances
@@ -440,6 +467,9 @@ tresult$net.impact<-(tresult$impact.x-tresult$impact.y)
 
 # Removing unneccesary vars
 rm(base, change)
+
+# # Cnss Blc edits
+# tresult<-tresult %>% dplyr::select(SLR,CnssBlc,scen.x,net.damage,net.damage.var,net.damage.sd)
 
 # Renaming scenarios to relevant OLUs
 tresult$scen.x<-as.character(tresult$scen.x) # Does weird things as a factor
@@ -474,6 +504,16 @@ tresult$scen.x<-ifelse(tresult$scen.x == "olu_00100.0.0.000.000000.00000.00.0000
 tresult$scen.x<-ifelse(tresult$scen.x == "olu_01000.0.0.000.000000.00000.00.00000.00_depth",2,tresult$scen.x)
 tresult$scen.x<-ifelse(tresult$scen.x == "olu_10000.0.0.000.000000.00000.00.00000.00_depth",1,tresult$scen.x) 
 tresult$scen.x<-as.numeric(tresult$scen.x)
+
+# # Export census block data for figure
+# tresult<-tresult %>% filter(SLR==200)
+# tresult7<-tresult %>% filter(scen.x==7)
+# tresult22<-tresult %>% filter(scen.x==22)
+# Exposure<-Exposure %>% dplyr::select(CnssBlc,geom)
+# dmg7<-merge(Exposure,tresult7,by="CnssBlc")
+# dmg22<-merge(Exposure,tresult22,by="CnssBlc")
+# st_write(dmg7,"dmg7.gpkg")
+# st_write(dmg22,"dmg22.gpkg")
 
 # Renaming OLUs using scenario naming convention
 tresult$Name<-as.character(tresult$Name)
