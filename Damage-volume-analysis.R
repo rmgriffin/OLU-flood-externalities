@@ -16,6 +16,7 @@ for (p in PKG) {
 }
 
 renv::snapshot()
+rm(p,PKG)
 
 # Unzip code function -----------------------------------------------------
 decompress_file <- function(file, directory, .file_cache = FALSE) {
@@ -58,6 +59,11 @@ decompress_file <- function(file, directory, .file_cache = FALSE) {
 setwd("~/Github/OLU-flood-externalities")
 dir.create(file.path('Tempdata'), recursive = TRUE)
 setwd("./Tempdata")
+
+# Issues with downloading, including "error curl::curl_fetch_disk(url, x$path, handle = handle)" ? https://github.com/jeroen/curl/issues/72 
+drive_auth(email = TRUE) # https://gargle.r-lib.org/articles/non-interactive-auth.html
+httr::set_config(httr::config(http_version = 0)) # https://github.com/jeroen/curl/issues/156 https://rdrr.io/github/exploratory-io/exploratory_func/src/R/google_drive.R
+
 folder_url<-"https://drive.google.com/open?id=1eLBOiF54WY8VClVgmWgzDE4IKyfCGuDW"
 files <- drive_get(as_id(folder_url))
 system.time(walk(files$id, ~ drive_download(as_id(.x))))
@@ -317,10 +323,10 @@ system.time(map(rs,decompress_file,"."))
 # unlink("global/", recursive = TRUE) # Remove unneeded directory
 # Damage assessment
 tifs050<-list.files(".",pattern = "*.tif",recursive = TRUE)
-plan(multisession(workers = 3)) # Care needed to not exceed available memory
-system.time(res050<-future_map(tifs050,damage, n = 100, .options = future_options(seed = TRUE)))
-# plan(sequential) # Use this approach if memory limited
-# system.time(res050<-lapply(tifs050,damage, n = 100))
+# plan(multisession(workers = 3)) # Care needed to not exceed available memory
+# system.time(res050<-future_map(tifs050,damage, n = 100, .options = future_options(seed = TRUE)))
+plan(sequential) # Use this approach if memory limited
+system.time(res050<-lapply(tifs050,damage, n = 100))
 # Flood assessment
 system.time(result.050<-map_df(tifs050,flood, .id = "tifs050"))
 setwd("..")
@@ -354,9 +360,9 @@ rs<-list.files()
 system.time(map(rs,decompress_file,"."))  
 # Damage assessment
 tifs100<-list.files(".",pattern = "*.tif",recursive = TRUE)
-plan(multisession(workers = 3)) # Care needed to not exceed available memory
-system.time(res100<-future_map(tifs100,damage, n = 100, .options = future_options(seed = TRUE)))
-#system.time(res100<-lapply(tifs100,damage, n = 100))
+# plan(multisession(workers = 3)) # Care needed to not exceed available memory
+# system.time(res100<-future_map(tifs100,damage, n = 100, .options = future_options(seed = TRUE)))
+system.time(res100<-lapply(tifs100,damage, n = 100))
 # Flood assessment
 system.time(result.100<-map_df(tifs100,flood, .id = "tifs100"))
 setwd("..")
@@ -390,9 +396,9 @@ rs<-list.files()
 system.time(map(rs,decompress_file,"."))
 # Damage assessment
 tifs150<-list.files(".",pattern = "*.tif",recursive = TRUE)
-plan(multisession(workers = 3)) # Care needed to not exceed available memory
-system.time(res150<-future_map(tifs150,damage, n = 100, .options = future_options(seed = TRUE)))
-#system.time(res150<-lapply(tifs150,damage, n = 100))
+# plan(multisession(workers = 3)) # Care needed to not exceed available memory
+# system.time(res150<-future_map(tifs150,damage, n = 100, .options = future_options(seed = TRUE)))
+system.time(res150<-lapply(tifs150,damage, n = 100))
 # Flood assessment
 system.time(result.150<-map_df(tifs150,flood, .id = "tifs150"))
 setwd("..")
@@ -426,9 +432,9 @@ rs<-list.files()
 system.time(map(rs,decompress_file,".")) 
 # Damage assessment
 tifs200<-list.files(".",pattern = "*.tif",recursive = TRUE)
-plan(multisession(workers = 3)) # Care needed to not exceed available memory
-system.time(res200<-future_map(tifs200,damage, n = 100, .options = future_options(seed = TRUE)))
-#system.time(res200<-lapply(tifs200,damage, n = 100))
+# plan(multisession(workers = 3)) # Care needed to not exceed available memory
+# system.time(res200<-future_map(tifs200,damage, n = 100, .options = future_options(seed = TRUE)))
+system.time(res200<-lapply(tifs200,damage, n = 100))
 # Flood assessment
 system.time(result.200<-map_df(tifs200,flood, .id = "tifs200"))
 setwd("..")
