@@ -60,9 +60,9 @@ setwd("~/Github/OLU-flood-externalities")
 dir.create(file.path('Tempdata'), recursive = TRUE)
 setwd("./Tempdata")
 
-# Issues with downloading, including "error curl::curl_fetch_disk(url, x$path, handle = handle)" ? https://github.com/jeroen/curl/issues/72 
-drive_auth(email = TRUE) # https://gargle.r-lib.org/articles/non-interactive-auth.html
-httr::set_config(httr::config(http_version = 0)) # https://github.com/jeroen/curl/issues/156 https://rdrr.io/github/exploratory-io/exploratory_func/src/R/google_drive.R
+# # Issues with downloading, including "error curl::curl_fetch_disk(url, x$path, handle = handle)" ? https://github.com/jeroen/curl/issues/72 
+# drive_auth(email = TRUE) # https://gargle.r-lib.org/articles/non-interactive-auth.html
+# httr::set_config(httr::config(http_version = 0)) # https://github.com/jeroen/curl/issues/156 https://rdrr.io/github/exploratory-io/exploratory_func/src/R/google_drive.R
 
 folder_url<-"https://drive.google.com/open?id=1eLBOiF54WY8VClVgmWgzDE4IKyfCGuDW"
 files <- drive_get(as_id(folder_url))
@@ -291,7 +291,10 @@ flood<-function(ras){
 
 # DL rasters -------------------------------------------------------
 
+## Due to the size of the total raster download (>500GB), it appears that google drive suspends downloading after some threshold with an error about the curl library. You can attempt to restart downloading from that folder, or move to one of the other 4 folders and return. Code is provided to identify the remaining files not downloaded and to attempt to download those.
+
 ## SLR 050
+setwd("~/Github/OLU-flood-externalities")
 dir.create(file.path('050'), recursive = TRUE)
 setwd("./050")
 folder_url<-"https://drive.google.com/open?id=1lYNtOw1zmhAnwR1n4X69ycQw9hOA8ko4"
@@ -305,6 +308,7 @@ dl<-function(files){
 system.time(map(files$id,dl))
 # Code if GD doesn't get all files, some missing
 rs<-list.files()
+files <- drive_ls(folder)
 files <- files[ !files$name %in% rs, ]
 system.time(future_map(files$id,dl))
 # Code if GD doesn't get all the files, not finished downloading
@@ -333,6 +337,7 @@ setwd("..")
 unlink("./050", recursive = TRUE) # Delete tif directory
 
 ## SLR 100
+setwd("~/Github/OLU-flood-externalities")
 dir.create(file.path('100'), recursive = TRUE)
 setwd("./100")
 folder_url<-"https://drive.google.com/open?id=1qRXdzE9KC16-ODh5awV1rdV3HjmcnnpT"
@@ -346,6 +351,7 @@ dl<-function(files){
 system.time(map(files$id,dl)) 
 # Code if GD doesn't get all files, some missing
 rs<-list.files()
+files <- drive_ls(folder)
 files <- files[ !files$name %in% rs, ]
 system.time(future_map(files$id,dl))
 # Code if GD doesn't get all the files, not finished downloading
@@ -369,6 +375,7 @@ setwd("..")
 unlink("./100", recursive = TRUE) # Delete tif directory
 
 ## SLR 150
+setwd("~/Github/OLU-flood-externalities")
 dir.create(file.path('150'), recursive = TRUE)
 setwd("./150")
 folder_url<-"https://drive.google.com/open?id=149aM7lIiXwQw2mRvtluv9WkBYZR61hv4"
@@ -382,6 +389,7 @@ dl<-function(files){
 system.time(map(files$id,dl))
 # Code if GD doesn't get all files, some missing
 rs<-list.files()
+files <- drive_ls(folder)
 files <- files[ !files$name %in% rs, ]
 system.time(future_map(files$id,dl))
 # Code if GD doesn't get all the files, not finished downloading
@@ -405,6 +413,7 @@ setwd("..")
 unlink("./150", recursive = TRUE) # Delete tif directory
 
 ## SLR 200
+setwd("~/Github/OLU-flood-externalities")
 dir.create(file.path('200'), recursive = TRUE)
 setwd("./200")
 folder_url<-"https://drive.google.com/open?id=1o02Qlr0L39rVYlr7Zk7UxVUR_czsT85u"
@@ -418,6 +427,7 @@ dl<-function(files){
 system.time(map(files$id,dl)) 
 # Code if GD doesn't get all files, some missing
 rs<-list.files()
+files <- drive_ls(folder)
 files <- files[ !files$name %in% rs, ]
 system.time(future_map(files$id,dl))
 # Code if GD doesn't get all the files, not finished downloading
