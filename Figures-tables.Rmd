@@ -28,7 +28,7 @@ knitr::opts_chunk$set(warning=FALSE, message=FALSE)
 
 ```{r, include=FALSE}
 # Downloading data using external script
-#source("Figures-tables-data.R")
+source("Figures-tables-data.R")
 
 # Load remaining data (outputs from "Damage-volume-analysis.R")
 tresult<-read.csv("tresult.csv")
@@ -872,7 +872,7 @@ v_n<-v_n+geom_text(data = final,  aes(y=x, x=Geomorphic, label=Letters, color=Ge
 
 z<-ggarrange(v_i,d_i,v_e,d_e,v_n,d_n, ncol = 2, nrow = 3, label.x = 0.05, label.y = 0.2, common.legend = TRUE)
 
-
+z
 ```
 
 ## Boxplot of volume and damage by geomorphological type across SLR scenarios
@@ -915,30 +915,30 @@ y
 
 
 ```{r `Tukey test numbers`, echo=FALSE, fig.align="center", warning=FALSE}
-
-inoutnet<-list("internal","internal","internal","internal","external","external","external","external","net","net","net","net","internal","internal","internal","internal","external","external","external","external","net","net","net","net")
-SLRlist<-list("50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm")
-DamVol<-list("Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume")
-
-Tuk<-function(x,y,z){
-  subd <- subset(stst[stst$Type==x,], SLR==y)
-  model=lm(reformulate("Geomorphic",z), data=subd)
-  ANOVA=aov(model)
-  TUKEY <-tidy(TukeyHSD(ANOVA))
-  TUKEY$Type<-x
-  TUKEY$SLR<-y
-  TUKEY$Measure<-z
-  return(TUKEY)
-}
-
-options(scipen = 999)
-
-TukTable<-pmap_dfr(list(inoutnet,SLRlist,DamVol), Tuk)
-TukTable<-TukTable[order(TukTable$Measure,TukTable$Type,TukTable$SLR),]
-TukTable<-TukTable %>% dplyr::select(contrast,adj.p.value,Type,SLR,Measure)
-TukTable$adj.p.value<-round(TukTable$adj.p.value,digits = 3)
-
-print(xtable(TukTable, type = "latex"), file = "TukTable.tex")
+# 
+# inoutnet<-list("internal","internal","internal","internal","external","external","external","external","net","net","net","net","internal","internal","internal","internal","external","external","external","external","net","net","net","net")
+# SLRlist<-list("50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm","50cm","100cm","150cm","200cm")
+# DamVol<-list("Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Damage","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume","Volume")
+# 
+# Tuk<-function(x,y,z){
+#   subd <- subset(stst[stst$Type==x,], SLR==y)
+#   model=lm(reformulate("Geomorphic",z), data=subd)
+#   ANOVA=aov(model)
+#   TUKEY <-tidy(TukeyHSD(ANOVA))
+#   TUKEY$Type<-x
+#   TUKEY$SLR<-y
+#   TUKEY$Measure<-z
+#   return(TUKEY)
+# }
+# 
+# options(scipen = 999)
+# 
+# TukTable<-pmap_dfr(list(inoutnet,SLRlist,DamVol), Tuk)
+# TukTable<-TukTable[order(TukTable$Measure,TukTable$Type,TukTable$SLR),]
+# TukTable<-TukTable %>% dplyr::select(contrast,adj.p.value,Type,SLR,Measure)
+# TukTable$adj.p.value<-round(TukTable$adj.p.value,digits = 3)
+# 
+# print(xtable(TukTable, type = "latex"), file = "TukTable.tex")
 
 ```
 
@@ -1010,7 +1010,6 @@ gele<-raster("./Data/srtmv4_30s.tif")
 suppressWarnings(gele<-projectRaster(gele, wpop, method = 'bilinear')) # Consistent projection with other layers
 coast_ne<-ne_download(10,type = "coastline", category = "physical",returnclass = "sf") # Natural Earth global coastline
 coast_ne<-st_transform(coast_ne,st_crs(gele))
-coast_ne<-st_transform(coast_ne,st_crs(gele.poly))
 
 # Coastline % length in Class 2 (bays/estuaries) 
 coast$length<-st_length(coast)
@@ -1021,9 +1020,8 @@ gele[gele < 10] <- 1
 gele[gele >= 10] <- NA
 
 # Mask needs to account for connectivity to coastline: 1) Convert raster to polygons; 2) 
-system.time(gele.poly<-rasterToPolygons(gele,na.rm = TRUE,dissolve = TRUE)) # Takes long time (2hrs on high performance machine if dissolve = TRUE)
-
-system.time(gele.poly<-rasterToPolygons(gele,na.rm = TRUE,dissolve = FALSE)) # Takes long time (2hrs on high performance machine if dissolve = TRUE)
+#system.time(gele.poly<-rasterToPolygons(gele,na.rm = TRUE,dissolve = TRUE)) # Takes long time (2hrs on high performance machine if dissolve = TRUE)
+system.time(gele.poly<-rasterToPolygons(gele,na.rm = TRUE,dissolve = FALSE)) 
 
 gele.poly<-st_as_sf(gele.poly)
 gele.poly<-st_cast(gele.poly, "POLYGON") # https://gis.stackexchange.com/questions/305734/splitting-multipart-polygons-to-single-part-in-r
