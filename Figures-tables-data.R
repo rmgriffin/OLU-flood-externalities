@@ -55,11 +55,11 @@ files <- drive_get(as_id(folder_url))
 system.time(walk(files$id, ~ drive_download(as_id(.x), overwrite = TRUE)))
 
 # Assorted other files
-folder_url<-"https://drive.google.com/open?id=1SMKTp-TahovCgDrruz3-r6B0bLPJUfIG"
-files <- drive_get(as_id(folder_url))
-system.time(walk(files$id, ~ drive_download(as_id(.x), overwrite = TRUE)))
-system.time(unzip("Data.zip",exdir = ".", files = "Roads_2015.gpkg"))
-file.remove("Data.zip")
+# folder_url<-"https://drive.google.com/open?id=1SMKTp-TahovCgDrruz3-r6B0bLPJUfIG"
+# files <- drive_get(as_id(folder_url))
+# system.time(walk(files$id, ~ drive_download(as_id(.x), overwrite = TRUE)))
+# system.time(unzip("Data.zip",exdir = ".", files = "Roads_2015.gpkg"))
+# file.remove("Data.zip")
 
 folder_url<-"https://drive.google.com/open?id=1eLBOiF54WY8VClVgmWgzDE4IKyfCGuDW"
 files <- drive_get(as_id(folder_url))
