@@ -1,7 +1,7 @@
 ## Downloads data for Rmarkdown script
 rm(list=ls()) # Clears workspace
 
-PKG <- c("renv","googledrive","furrr") # https://rud.is/b/2016/02/14/making-faceted-heatmaps-with-ggplot2/
+PKG <- c("renv","googledrive","furrr") 
 
 for (p in PKG) {
   if(!require(p,character.only = TRUE)) {  
